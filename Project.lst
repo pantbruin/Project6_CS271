@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 14.28.29913.0	    05/31/21 19:03:54
+Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/01/21 20:10:44
 "Project 6     (Proj6_pantojaj.asm			     Page 1 - 1
 
 
@@ -39,12 +39,39 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    05/31/21 19:03:54
 				    POP     EDX
 				ENDM
 
+				mGetString MACRO promptAddr, inputStringAddr, maxStrLength, charsReadAddr
+				    PUSH    EDX
+				    PUSH    ECX
+				    PUSH    EDI
+				    
+				    ; Prompt user (string)
+				    mDisplayString promptAddr
+				    MOV     ECX, maxStrLength
+				    MOV     EDX, inputStringAddr
+				    CALL    ReadString
+				    ; Copy number of characters read to charsReadAddr variable
+				    MOV     EDI, charsReadAddr
+				    MOV     [EDI], EAX
+
+				    ; Restore used registers
+				    POP     EDI
+				    POP     ECX
+				    POP     EDX
+
+
+				ENDM
+
 				; (insert constant definitions here)
+ = 0000000D			MAX_STRING_LENGTH = 13   ; Max # of digits in a 32 bit SWORD integer is 10. 11 accounts for sign, 12 for null terminator. 13 is used for length validation.
+ = 0000000B			MAX_CHARS_ALLOWED = 11
+ = 0000002B			PLUS_SIGN_ASCII = 43
+ = 0000002D			MINUS_SIGN_ASCII = 45
+ = 00000030			ZERO_ASCII = 48
+ = 00000039			NINE_ASCII = 57
 
  00000000			.data
-
 				    ; Strings
- 00000000 50 52 4F 47 52	    header1     BYTE    "PROGRAMMING ASSIGNMENT 6: Designing low-level I/O procedures", 13, 10, 0
+ 00000000 50 52 4F 47 52	    header1             BYTE    "PROGRAMMING ASSIGNMENT 6: Designing low-level I/O procedures", 13, 10, 0
 	   41 4D 4D 49 4E
 	   47 20 41 53 53
 	   49 47 4E 4D 45
@@ -57,66 +84,111 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    05/31/21 19:03:54
 	   70 72 6F 63 65
 	   64 75 72 65 73
 	   0D 0A 00
- 0000003F 57 72 69 74 74	    header2     BYTE    "Written by: Jesse Pantoja", 13, 10, 13, 10, 0
+ 0000003F 57 72 69 74 74	    header2             BYTE    "Written by: Jesse Pantoja", 13, 10, 13, 10, 0
 	   65 6E 20 62 79
 	   3A 20 4A 65 73
 	   73 65 20 50 61
 	   6E 74 6F 6A 61
 	   0D 0A 0D 0A 00
- 0000005D 50 6C 65 61 73	    header3     BYTE    "Please provide 10 signed decimal integers.", 13, 10, 0
-	   65 20 70 72 6F
-	   76 69 64 65 20
-	   31 30 20 73 69
-	   67 6E 65 64 20
-	   64 65 63 69 6D
-	   61 6C 20 69 6E
-	   74 65 67 65 72
-	   73 2E 0D 0A 00
- 0000008A 45 61 63 68 20	    header4     BYTE    "Each number needs to bextr small enough to fit inside a 32 bit register.",
-	   6E 75 6D 62 65
-	   72 20 6E 65 65
-	   64 73 20 74 6F
-	   20 62 65 78 74
-	   72 20 73 6D 61
-	   6C 6C 20 65 6E
-	   6F 75 67 68 20
-	   74 6F 20 66 69
-	   74 20 69 6E 73
-	   69 64 65 20 61
-	   20 33 32 20 62
-	   69 74 20 72 65
-	   67 69 73 74 65
-	   72 2E 20 41 66
-	   74 65 72 20 79
-	   6F 75 20 68 61
-	   76 65 20 66 69
-	   6E 69 73 68 65
-	   64 20 69 6E 70
-	   75 74 74 69 6E
-	   67 20 74 68 65
-	   20 72 61 77 20
-	   6E 75 6D 62 65
-	   72 73 2C 20 49
-	   20 77 69 6C 6C
-	   20 64 69 73 70
-	   6C 61 79 20 61
-	   20 6C 69 73 74
-	   20 6F 66 20 74
-	   68 65 20 69 6E
-	   74 65 67 65 72
-	   73 2C 20 74 68
-	   65 69 72 20 73
-	   75 6D 2C 20 61
-	   6E 64 20 74 68
-	   65 69 72 20 61
-	   76 65 72 61 67
-	   65 20 76 61 6C
-	   75 65 2E 0D 0A
+ 0000005D 50 6C 65 61 73	    header3             BYTE    "Please enter 10 signed decimal integers between -2,147,483,648 and 2,147,483,647.", 13, 10, 0
+	   65 20 65 6E 74
+	   65 72 20 31 30
+	   20 73 69 67 6E
+	   65 64 20 64 65
+	   63 69 6D 61 6C
+	   20 69 6E 74 65
+	   67 65 72 73 20
+	   62 65 74 77 65
+	   65 6E 20 2D 32
+	   2C 31 34 37 2C
+	   34 38 33 2C 36
+	   34 38 20 61 6E
+	   64 20 32 2C 31
+	   34 37 2C 34 38
+	   33 2C 36 34 37
+	   2E 0D 0A 00
+ 000000B1 49 20 77 69 6C	    header4             BYTE    "I will then display a list of the entered integers, their sum, and their average value.", 13, 10,
+	   6C 20 74 68 65
+	   6E 20 64 69 73
+	   70 6C 61 79 20
+	   61 20 6C 69 73
+	   74 20 6F 66 20
+	   74 68 65 20 65
+	   6E 74 65 72 65
+	   64 20 69 6E 74
+	   65 67 65 72 73
+	   2C 20 74 68 65
+	   69 72 20 73 75
+	   6D 2C 20 61 6E
+	   64 20 74 68 65
+	   69 72 20 61 76
+	   65 72 61 67 65
+	   20 76 61 6C 75
+	   65 2E 0D 0A 59
+	   6F 75 20 6D 61
+	   79 20 6F 6E 6C
+	   79 20 65 6E 74
+	   65 72 20 31 31
+	   20 6D 61 78 20
+	   63 68 61 72 61
+	   63 74 65 72 73
+	   20 70 65 72 20
+	   69 6E 70 75 74
+	   2E 0D 0A 0D 0A
+	   00
+				                                "You may only enter 11 max characters per input.", 13, 10, 13, 10, 0
+ 0000013E 50 6C 65 61 73	    promptUser          BYTE    "Please enter a signed number: ", 0
+	   65 20 65 6E 74
+	   65 72 20 61 20
+	   73 69 67 6E 65
+	   64 20 6E 75 6D
+	   62 65 72 3A 20
+	   00
+ 0000015D 45 52 52 4F 52	    invalidCharAmount   BYTE    "ERROR: You entered too many characters! Try again.", 13, 10, 0
+	   3A 20 59 6F 75
+	   20 65 6E 74 65
+	   72 65 64 20 74
+	   6F 6F 20 6D 61
+	   6E 79 20 63 68
+	   61 72 61 63 74
+	   65 72 73 21 20
+	   54 72 79 20 61
+	   67 61 69 6E 2E
 	   0D 0A 00
-				                        " After you have finished inputting the raw numbers, I will display a list",
-				                        " of the integers, their sum, and their average value.", 13, 10, 13, 10, 0
+ 00000192 45 52 52 4F 52	    invalidCharAmount2  BYTE    "ERROR: You did not enter any characters! Try again.", 13, 10, 0
+	   3A 20 59 6F 75
+	   20 64 69 64 20
+	   6E 6F 74 20 65
+	   6E 74 65 72 20
+	   61 6E 79 20 63
+	   68 61 72 61 63
+	   74 65 72 73 21
+	   20 54 72 79 20
+	   61 67 61 69 6E
+	   2E 0D 0A 00
+ 000001C8 45 52 52 4F 52	    invalidIntStr       BYTE    "ERROR: You did not enter a signed decimal number. Try again.", 13, 10, 0 
+	   3A 20 59 6F 75
+	   20 64 69 64 20
+	   6E 6F 74 20 65
+	   6E 74 65 72 20
+	   61 20 73 69 67
+	   6E 65 64 20 64
+	   65 63 69 6D 61
+	   6C 20 6E 75 6D
+	   62 65 72 2E 20
+	   54 72 79 20 61
+	   67 61 69 6E 2E
+	   0D 0A 00
+ 00000207 56 61 6C 69 64	    validFirstChar      BYTE    "Valid first char", 13, 10, 0
+	   20 66 69 72 73
+	   74 20 63 68 61
+	   72 0D 0A 00
+				    
 
-				; (insert variable definitions here)
+				    ; Data
+ 0000021A 00000000		    numCharsInputted    DWORD   ?
+ 0000021E			    userInputString     BYTE    MAX_STRING_LENGTH DUP(?)
+ 0000022B 00000000		    userInputInt        DWORD   ?
 
  00000000			.code
  00000000			main PROC
@@ -125,50 +197,150 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    05/31/21 19:03:54
  00000000  68 00000000 R	    PUSH    OFFSET header1
  00000005  68 0000003F R	    PUSH    OFFSET header2
  0000000A  68 0000005D R	    PUSH    OFFSET header3
- 0000000F  68 0000008A R	    PUSH    OFFSET header4
- 00000014  E8 00000007		    CALL    introduction
+ 0000000F  68 000000B1 R	    PUSH    OFFSET header4
+ 00000014  E8 0000002C		    CALL    introduction
+
+				    ; Call Read Val x10 
+ 00000019  68 000001C8 R	    PUSH    OFFSET invalidIntStr
+ 0000001E  68 00000192 R	    PUSH    OFFSET invalidCharAmount2
+ 00000023  68 0000015D R	    PUSH    OFFSET invalidCharAmount
+ 00000028  68 0000021A R	    PUSH    OFFSET numCharsInputted
+ 0000002D  6A 0D		    PUSH    MAX_STRING_LENGTH
+ 0000002F  68 0000021E R	    PUSH    OFFSET userInputString
+ 00000034  68 0000013E R	    PUSH    OFFSET promptUser
+ 00000039  E8 00000036		    CALL    ReadVal
 
 
 				    Invoke ExitProcess,0	; exit to operating system
- 00000019  6A 00	   *	    push   +000000000h
- 0000001B  E8 00000000 E   *	    call   ExitProcess
- 00000020			main ENDP
+ 0000003E  6A 00	   *	    push   +000000000h
+ 00000040  E8 00000000 E   *	    call   ExitProcess
+ 00000045			main ENDP
 
 				; (insert additional procedures here)
 
- 00000020			introduction PROC
+ 00000045			introduction PROC
 				    ; Create stack frame
- 00000020  55			    PUSH    EBP
- 00000021  8B EC		    MOV     EBP, ESP
+ 00000045  55			    PUSH    EBP
+ 00000046  8B EC		    MOV     EBP, ESP
 
 				    mDisplayString [EBP + 20]
- 00000023  52		     1	    PUSH    EDX
- 00000024  8B 55 14	     1	    MOV     EDX, [EBP + 20]
- 00000027  E8 00000000 E     1	    CALL    WriteString
- 0000002C  5A		     1	    POP     EDX
+ 00000048  52		     1	    PUSH    EDX
+ 00000049  8B 55 14	     1	    MOV     EDX, [EBP + 20]
+ 0000004C  E8 00000000 E     1	    CALL    WriteString
+ 00000051  5A		     1	    POP     EDX
 				    mDisplayString [EBP + 16]
- 0000002D  52		     1	    PUSH    EDX
- 0000002E  8B 55 10	     1	    MOV     EDX, [EBP + 16]
- 00000031  E8 00000000 E     1	    CALL    WriteString
- 00000036  5A		     1	    POP     EDX
+ 00000052  52		     1	    PUSH    EDX
+ 00000053  8B 55 10	     1	    MOV     EDX, [EBP + 16]
+ 00000056  E8 00000000 E     1	    CALL    WriteString
+ 0000005B  5A		     1	    POP     EDX
 				    mDisplayString [EBP + 12]
- 00000037  52		     1	    PUSH    EDX
- 00000038  8B 55 0C	     1	    MOV     EDX, [EBP + 12]
- 0000003B  E8 00000000 E     1	    CALL    WriteString
- 00000040  5A		     1	    POP     EDX
+ 0000005C  52		     1	    PUSH    EDX
+ 0000005D  8B 55 0C	     1	    MOV     EDX, [EBP + 12]
+ 00000060  E8 00000000 E     1	    CALL    WriteString
+ 00000065  5A		     1	    POP     EDX
 				    mDisplayString [EBP + 8]
- 00000041  52		     1	    PUSH    EDX
- 00000042  8B 55 08	     1	    MOV     EDX, [EBP + 8]
- 00000045  E8 00000000 E     1	    CALL    WriteString
- 0000004A  5A		     1	    POP     EDX
+ 00000066  52		     1	    PUSH    EDX
+ 00000067  8B 55 08	     1	    MOV     EDX, [EBP + 8]
+ 0000006A  E8 00000000 E     1	    CALL    WriteString
+ 0000006F  5A		     1	    POP     EDX
 				    
- 0000004B  5D			    POP     EBP
- 0000004C  C2 0010		    RET     16
- 0000004F			introduction ENDP
+ 00000070  5D			    POP     EBP
+ 00000071  C2 0010		    RET     16
+ 00000074			introduction ENDP
+
+ 00000074			ReadVal PROC
+ 00000074  55			    PUSH    EBP
+ 00000075  8B EC		    MOV     EBP, ESP
+
+				    ; Save Used Registers
+ 00000077  50			    PUSH    EAX
+ 00000078  53			    PUSH    EBX
+ 00000079  52			    PUSH    EDX
+ 0000007A  56			    PUSH    ESI
+				    
+ 0000007B			_getString:
+				    ; Args: promptUser addr, userInputStringAddr addr, MAX_STRING_LENGTH val, numCharsInputted addr
+				    mGetString [EBP + 8], [EBP + 12], [EBP + 16], [EBP + 20]
+ 0000007B  52		     1	    PUSH    EDX
+ 0000007C  51		     1	    PUSH    ECX
+ 0000007D  57		     1	    PUSH    EDI
+ 0000007E  52		     2	    PUSH    EDX
+ 0000007F  8B 55 08	     2	    MOV     EDX, [EBP + 8]
+ 00000082  E8 00000000 E     2	    CALL    WriteString
+ 00000087  5A		     2	    POP     EDX
+ 00000088  8B 4D 10	     1	    MOV     ECX, [EBP + 16]
+ 0000008B  8B 55 0C	     1	    MOV     EDX, [EBP + 12]
+ 0000008E  E8 00000000 E     1	    CALL    ReadString
+ 00000093  8B 7D 14	     1	    MOV     EDI, [EBP + 20]
+ 00000096  89 07	     1	    MOV     [EDI], EAX
+ 00000098  5F		     1	    POP     EDI
+ 00000099  59		     1	    POP     ECX
+ 0000009A  5A		     1	    POP     EDX
+				    
+				    ; Debugging
+ 0000009B  BA 0000021E R	    MOV     EDX, OFFSET userInputString
+ 000000A0  E8 00000000 E	    CALL    WriteString
+ 000000A5  E8 00000000 E	    CALL    CrLf
+ 000000AA  A1 0000021A R	    MOV     EAX, numCharsInputted
+ 000000AF  E8 00000000 E	    CALL    WriteDec
+
+				    ; First check if user input string exceeds MAX_CHARS_ALLOWED
+				    ; [EBP + 20] = numCharsInputted address
+ 000000B4  8B 75 14		    MOV     ESI, [EBP + 20]
+ 000000B7  8B 1E		    MOV     EBX, [ESI]
+ 000000B9  83 FB 0B		    CMP     EBX, MAX_CHARS_ALLOWED
+				    ; If numCharsInputted < 11, jump to next check, else display error and jump back to mGetString
+ 000000BC  7E 0A		    JLE     _checkForNullString
+ 000000BE  8B 55 18		    MOV     EDX, [EBP + 24]
+ 000000C1  E8 00000000 E	    CALL    WriteString
+ 000000C6  EB B3		    JMP     _getString
+
+				    ; Check if user input is empty, i.e. bytes read = 0. Display error if so. Else, go to next check
+ 000000C8			_checkForNullString:
+ 000000C8  83 FB 00		    CMP     EBX, 0
+ 000000CB  7F 0A		    JG      _checkForValidFirstChar
+ 000000CD  8B 55 1C		    MOV     EDX, [EBP + 28]
+ 000000D0  E8 00000000 E	    CALL    WriteString
+ 000000D5  EB A4		    JMP     _getString
+				 
+				    ; Check that first character is a +, -, or digit character
+ 000000D7			_checkForValidFirstChar:
+ 000000D7  FC			    CLD
+				    ; Change ESI from num of chars inputted to inputStringAddress 
+ 000000D8  8B 75 0C		    MOV ESI, [EBP + 12]
+				    ; Copy first char of userInput into AL
+ 000000DB  AC			    LODSB
+
+				    ; AL must be 43 OR 45 OR (48 <= AL <= 57)
+ 000000DC  3C 2B		    CMP AL, PLUS_SIGN_ASCII
+ 000000DE  74 16		    JE  _firstCharValid
+
+ 000000E0  3C 2D		    CMP AL, MINUS_SIGN_ASCII
+ 000000E2  74 12		    JE  _firstCharValid
+
+				    ; If AL val < 48, first char must be invalid, else check if val > 57
+ 000000E4  3C 30		    CMP AL, ZERO_ASCII
+ 000000E6  7C 04		    JL  _firstCharInvalid
+
+				    ; If AL val <= NINE_ASCII, then first char at this point is valid
+ 000000E8  3C 39		    CMP AL, NINE_ASCII
+ 000000EA  7E 0A		    JLE _firstCharValid
+
+				    ; Output error string and ask for input again
+ 000000EC			_firstCharInvalid:
+ 000000EC  8B 55 20		    MOV     EDX, [EBP + 32]
+ 000000EF  E8 00000000 E	    CALL    WriteString
+ 000000F4  EB 85		    JMP     _getString
+
+
+ 000000F6			_firstCharValid:
+
+
+ 000000F6			ReadVal ENDP
 
 
 				END main
-Microsoft (R) Macro Assembler Version 14.28.29913.0	    05/31/21 19:03:54
+Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/01/21 20:10:44
 "Project 6     (Proj6_pantojaj.asm			     Symbols 2 - 1
 
 
@@ -179,6 +351,7 @@ Macros:
                 N a m e                 Type
 
 mDisplayString . . . . . . . . .	Proc
+mGetString . . . . . . . . . . .	Proc
 
 
 Structures and Unions:
@@ -269,8 +442,8 @@ Segments and Groups:
 
 FLAT . . . . . . . . . . . . . .	GROUP
 STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
-_DATA  . . . . . . . . . . . . .	32 Bit	 00000155 Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 0000004F Para	  Public  'CODE'	
+_DATA  . . . . . . . . . . . . .	32 Bit	 0000022F Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 000000F6 Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
@@ -340,6 +513,12 @@ ReadInt  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 ReadKeyFlush . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 ReadKey  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 ReadString . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadVal  . . . . . . . . . . . .	P Near	 00000074 _TEXT	Length= 00000082 Public STDCALL
+  _getString . . . . . . . . . .	L Near	 0000007B _TEXT	
+  _checkForNullString  . . . . .	L Near	 000000C8 _TEXT	
+  _checkForValidFirstChar  . . .	L Near	 000000D7 _TEXT	
+  _firstCharInvalid  . . . . . .	L Near	 000000EC _TEXT	
+  _firstCharValid  . . . . . . .	L Near	 000000F6 _TEXT	
 SetConsoleCursorInfo . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 SetConsoleCursorPosition . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 SetConsoleMode . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
@@ -377,8 +556,8 @@ WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-introduction . . . . . . . . . .	P Near	 00000020 _TEXT	Length= 0000002F Public STDCALL
-main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000020 Public STDCALL
+introduction . . . . . . . . . .	P Near	 00000045 _TEXT	Length= 0000002F Public STDCALL
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000045 Public STDCALL
 printf . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 scanf  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 wsprintfA  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
@@ -470,6 +649,8 @@ KEY_EVENT  . . . . . . . . . . .	Number	 00000001h
 KEY_MASKS  . . . . . . . . . . .	Number	 0000001Fh   
 LEFT_ALT_PRESSED . . . . . . . .	Number	 00000002h   
 LEFT_CTRL_PRESSED  . . . . . . .	Number	 00000008h   
+MAX_CHARS_ALLOWED  . . . . . . .	Number	 0000000Bh   
+MAX_STRING_LENGTH  . . . . . . .	Number	 0000000Dh   
 MB_ABORTRETRYIGNORE  . . . . . .	Number	 00000002h   
 MB_APPLMODAL . . . . . . . . . .	Number	 00000000h   
 MB_CANCELTRYCONTINUE . . . . . .	Number	 00000006h   
@@ -495,12 +676,15 @@ MB_USERICON  . . . . . . . . . .	Number	 00000080h
 MB_YESNOCANCEL . . . . . . . . .	Number	 00000003h   
 MB_YESNO . . . . . . . . . . . .	Number	 00000004h   
 MENU_EVENT . . . . . . . . . . .	Number	 00000008h   
+MINUS_SIGN_ASCII . . . . . . . .	Number	 0000002Dh   
 MOUSE_EVENT  . . . . . . . . . .	Number	 00000002h   
 MessageBox . . . . . . . . . . .	Text   	 MessageBoxA
+NINE_ASCII . . . . . . . . . . .	Number	 00000039h   
 NULL . . . . . . . . . . . . . .	Number	 00000000h   
 NUMLOCK_ON . . . . . . . . . . .	Number	 00000020h   
 OPEN_ALWAYS  . . . . . . . . . .	Number	 00000004h   
 OPEN_EXISTING  . . . . . . . . .	Number	 00000003h   
+PLUS_SIGN_ASCII  . . . . . . . .	Number	 0000002Bh   
 PeekConsoleInput . . . . . . . .	Text   	 PeekConsoleInputA
 RIGHT_ALT_PRESSED  . . . . . . .	Number	 00000001h   
 RIGHT_CTRL_PRESSED . . . . . . .	Number	 00000004h   
@@ -597,6 +781,7 @@ VK_UP  . . . . . . . . . . . . .	Number	 00000026h
 WINDOW_BUFFER_SIZE_EVENT . . . .	Number	 00000004h   
 WriteConsoleOutputCharacter  . .	Text   	 WriteConsoleOutputCharacterA
 WriteConsole . . . . . . . . . .	Text   	 WriteConsoleA
+ZERO_ASCII . . . . . . . . . . .	Number	 00000030h   
 black  . . . . . . . . . . . . .	Number	 00000000h   
 blue . . . . . . . . . . . . . .	Number	 00000001h   
 brown  . . . . . . . . . . . . .	Number	 00000006h   
@@ -607,7 +792,10 @@ green  . . . . . . . . . . . . .	Number	 00000002h
 header1  . . . . . . . . . . . .	Byte	 00000000 _DATA	
 header2  . . . . . . . . . . . .	Byte	 0000003F _DATA	
 header3  . . . . . . . . . . . .	Byte	 0000005D _DATA	
-header4  . . . . . . . . . . . .	Byte	 0000008A _DATA	
+header4  . . . . . . . . . . . .	Byte	 000000B1 _DATA	
+invalidCharAmount2 . . . . . . .	Byte	 00000192 _DATA	
+invalidCharAmount  . . . . . . .	Byte	 0000015D _DATA	
+invalidIntStr  . . . . . . . . .	Byte	 000001C8 _DATA	
 lightBlue  . . . . . . . . . . .	Number	 00000009h   
 lightCyan  . . . . . . . . . . .	Number	 0000000Bh   
 lightGray  . . . . . . . . . . .	Number	 00000007h   
@@ -615,7 +803,12 @@ lightGreen . . . . . . . . . . .	Number	 0000000Ah
 lightMagenta . . . . . . . . . .	Number	 0000000Dh   
 lightRed . . . . . . . . . . . .	Number	 0000000Ch   
 magenta  . . . . . . . . . . . .	Number	 00000005h   
+numCharsInputted . . . . . . . .	DWord	 0000021A _DATA	
+promptUser . . . . . . . . . . .	Byte	 0000013E _DATA	
 red  . . . . . . . . . . . . . .	Number	 00000004h   
+userInputInt . . . . . . . . . .	DWord	 0000022B _DATA	
+userInputString  . . . . . . . .	Byte	 0000021E _DATA	
+validFirstChar . . . . . . . . .	Byte	 00000207 _DATA	
 white  . . . . . . . . . . . . .	Number	 0000000Fh   
 wsprintf . . . . . . . . . . . .	Text   	 wsprintfA
 yellow . . . . . . . . . . . . .	Number	 0000000Eh   
