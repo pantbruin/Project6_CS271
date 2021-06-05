@@ -78,6 +78,7 @@ POSITIVE = 0
     totalSum                SDWORD  0
     writevalOutputString    BYTE    11 DUP(0)
     commaCounter            BYTE    0
+    roundedAverageInt       SDWORD  ?
     
 
     ; Array
@@ -124,6 +125,7 @@ _getIntegers:
 
     ; Display "You entered following numbers:" string
     CALL    CrLf
+    CALL    CrLf
     mDisplayString OFFSET numbersInputtedStr
 
     ; Call WriteVal 10 times, each time pushing a value from userIntegersArray. For debugging, only do first val for now
@@ -141,24 +143,45 @@ _displayIntsAsStrings:
     ADD     ESI, 4
 
     CMP     commaCounter, 9
-    JE      _loopInstruction
+    JE      _writevalLoopInstruction
     mDisplayString OFFSET commaSpacing
     INC     commaCounter
-_loopInstruction:
-    LOOP _displayIntsAsStrings
-    
+_writevalLoopInstruction:
+    LOOP    _displayIntsAsStrings
 
 
-    ; DEBUGGING: PRINTS ARRAY
-   ; MOV     ECX, 10
-    ;MOV     ESI, OFFSET userIntegersArray
-;_printArray:
-;    MOV     EAX, [ESI]
-;    ADD     ESI, TYPE userIntegersArray
-;    CALL    WriteInt
-;    CALL    CrLf
-;    LOOP    _printArray
+    ; Output sum strings
+    CALL    CrLf
+    CALL    CrLf
+    mDisplayString OFFSET sumOfNumbersStr
+
+    PUSH    SIZEOF writevalOutputString
+    PUSH    OFFSET isNegativeNum
+    PUSH    OFFSET writevalOutputString
+    PUSH    totalSum
+    CALL    WriteVal
+
+    ; Calculate rounded average
+    PUSH    OFFSET totalSum
+    PUSH    OFFSET roundedAverageInt
+    CALL    calculateRoundedAverage
+
+    ; Display rounded average
+    CALL    CrLf
+    CALL    CrLf
+    mDisplayString OFFSET roundedAverageStr
     
+    PUSH    SIZEOF writevalOutputString
+    PUSH    OFFSET isNegativeNum
+    PUSH    OFFSET writevalOutputString
+    PUSH    roundedAverageInt
+    CALL    WriteVal
+
+    ; Display farewell
+    CALL    CrLf
+    CALL    CrLf
+    mDisplayString OFFSET farewellStr
+
 
 
     Invoke ExitProcess,0	; exit to operating system
@@ -605,7 +628,39 @@ _exitProcedure:
 WriteVal    ENDP
 
 calculateRoundedAverage     PROC
+    PUSH    EBP
+    MOV     EBP, ESP
 
+    PUSH    EAX
+    PUSH    EDX
+    PUSH    EBX
+    PUSH    ESI
+    PUSH    EDI
+
+    ; [EBP + 8] = roundedAverage SDWORD address
+    MOV     EDI, [EBP + 8]
+
+    ; [EBP + 12] = totalSum Address, the dividend
+    MOV     ESI, [EBP + 12]
+    MOV     EAX, [ESI]
+
+    ; Dividend = 10 for 10 total integers
+    MOV     EBX, 10
+
+    ; Clear EDX
+    CDQ
+    IDIV    EBX
+    
+    ; Quotient in EAX
+    MOV     [EDI], EAX
+
+    POP     EDI
+    POP     ESI
+    POP     EBX
+    POP     EDX
+    POP     EAX
+    POP     EBP
+    RET     8
 
 
 calculateRoundedAverage     ENDP
