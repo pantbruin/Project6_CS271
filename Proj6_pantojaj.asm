@@ -60,19 +60,28 @@ POSITIVE = 0
     promptUser              BYTE    "Please enter a signed number: ", 0
     invalidCharAmount       BYTE    "ERROR: You entered too many characters! Try again.", 13, 10, 0
     invalidCharAmount2      BYTE    "ERROR: You did not enter any characters! Try again.", 13, 10, 0
-    invalidIntStr           BYTE    "ERROR: You did not enter a signed decimal number or your number is too big. Try again.", 13, 10, 0 
-    validFirstChar          BYTE    "Valid first char", 13, 10, 0
+    invalidIntStr           BYTE    "ERROR: You did not enter a signed decimal number. Try again.", 13, 10, 0 
+    numbersInputtedStr      BYTE    "You entered the following numbers:", 13, 10, 0
+    sumOfNumbersStr         BYTE    "The sum of these numbers is: ", 0
+    roundedAverageStr       BYTE    "The rounded average is: ", 0
+    commaSpacing            BYTE    ", ", 0
+    farewellStr             BYTE    "Thanks for playing!", 0
+    overflowString          BYTE    "The number you entered is too large for a 32 bit register.", 13, 10, 0
+
     
 
     ; Data
     numCharsInputted        DWORD   ?
     userInputString         BYTE    MAX_STRING_LENGTH DUP(?)
     userInputNumericVal     SDWORD  ?
-    isNegativeNum           DWORD   POSITIVE
+    isNegativeNum           DWORD   0
     totalSum                SDWORD  0
+    writevalOutputString    BYTE    11 DUP(0)
+    commaCounter            BYTE    0
+    
 
     ; Array
-    userIntegersArray       SDWORD  10 DUP(?)
+    userIntegersArray       SDWORD  11 DUP(?)
 
 .code
 main PROC
@@ -89,6 +98,7 @@ main PROC
 
 _getIntegers:
     ; Call Read Val x10 
+    PUSH    OFFSET overflowString
     PUSH    OFFSET isNegativeNum
     PUSH    OFFSET userInputNumericVal
     PUSH    OFFSET invalidIntStr
@@ -100,7 +110,7 @@ _getIntegers:
     PUSH    OFFSET promptUser
     CALL    ReadVal
 
-    
+    ; ReadVal returns value in userInputNumericVal, move it into current array address
     MOV     EBX, userInputNumericVal
     MOV     [ESI], EBX
     ADD     ESI, TYPE userIntegersArray
@@ -111,6 +121,32 @@ _getIntegers:
     PUSH    OFFSET totalSum
     PUSH    OFFSET userIntegersArray
     CALL    calculateSum
+
+    ; Display "You entered following numbers:" string
+    CALL    CrLf
+    mDisplayString OFFSET numbersInputtedStr
+
+    ; Call WriteVal 10 times, each time pushing a value from userIntegersArray. For debugging, only do first val for now
+    ; Reset isNegativeNum to false
+    MOV     ESI, OFFSET userIntegersArray
+    MOV     ECX, 10
+
+_displayIntsAsStrings:
+    PUSH    SIZEOF writevalOutputString
+    PUSH    OFFSET isNegativeNum
+    PUSH    OFFSET writevalOutputString
+    ; Push VALUE at current address of userIntegersArray
+    PUSH    [ESI]
+    CALL    WriteVal
+    ADD     ESI, 4
+
+    CMP     commaCounter, 9
+    JE      _loopInstruction
+    mDisplayString OFFSET commaSpacing
+    INC     commaCounter
+_loopInstruction:
+    LOOP _displayIntsAsStrings
+    
 
 
     ; DEBUGGING: PRINTS ARRAY
@@ -175,16 +211,14 @@ _getString:
     CMP     EBX, MAX_CHARS_ALLOWED
     ; If numCharsInputted < 11, jump to next check, else display error and jump back to mGetString
     JLE     _checkForNullString
-    MOV     EDX, [EBP + 24]
-    CALL    WriteString
+    mDisplayString [EBP + 24]
     JMP     _getString
 
     ; Check if user input is empty, i.e. bytes read = 0. Display error if so. Else, go to next check
 _checkForNullString:
     CMP     EBX, 0
     JG      _checkForValidFirstChar
-    MOV     EDX, [EBP + 28]
-    CALL    WriteString
+    mDisplayString [EBP + 28]
     JMP     _getString
  
     ; Check that first character is a +, -, or digit character
@@ -214,8 +248,7 @@ _checkForValidFirstChar:
 
     ; Output error string and ask for input again
 _stringInvalid:
-    MOV     EDX, [EBP + 32]
-    CALL    WriteString
+    mDisplayString [EBP + 32]
     JMP     _getString
 
     ; If first char is a + or - char, we must also check that there is more than one char
@@ -315,7 +348,7 @@ _startLoop:
 
 _skipLoop:
     ; DETERMINE IF RUNNING VALUE NEEDS TO BE NEGATED
-    PUSH    EBX
+    ; PUSH    EBX unecessary because old ebx value is numCharsinputted, useless
     PUSH    ESI
     ; [EBP + 40] = isNegativeNum address
     MOV     ESI, [EBP + 40]
@@ -337,11 +370,11 @@ _skipLoop:
 
 _skipNegating:
     ; Restore EBX here from its push after loop end
-    POP     EBX
+    ; POP     EBX from line 352 push
 
     ; Next compare numOfCharsInputted by user >= 10 to check if final value fits in 32 bit reg.
     ; Skip and exit procedure if not. 
-    PUSH    EBX
+    ; PUSH    EBX unecessary push
     PUSH    ESI
     ; [EBP + 20] = numOfCharsInputted
     MOV     ESI, [EBP + 20]
@@ -377,7 +410,7 @@ _skipNegating:
     ; Result in EAX
     IMUL     EDI
     ; Jump to stringInvalid if 10*userNumericVal triggers overflow
-    JO      _stringInvalid
+    JO      _overflowAtMultiplication
 
     ; Else Save 10*userNumericVal from EAX to EBX
     MOV     EBX, EAX
@@ -403,15 +436,17 @@ _skipNegatingLastDigit:
 
     ADD     EBX, EAX
     ; Jump to stringInvalid if (10*userNumericVal) + integer triggers overflow
-    JO      _stringInvalid
+    JO      _overflowAtAddition
     MOV     [ESI], EBX
     POP     EBX
     POP     EDI
     POP     ESI
 
 _exitProcedure: 
-    ; POP EBX from line 312 code block
-    POP     EBX
+    ; Reset isNegativeNum to 0, it's original parameter value
+    MOV     ESI, [EBP + 40]
+    MOV     EBX, 0
+    MOV     [ESI], EBX
 
     ; Clean up stack
     POP     ESI
@@ -421,6 +456,23 @@ _exitProcedure:
     POP     EAX
     POP     EBP
     RET     36
+
+_overflowAtMultiplication:
+    ; Realign stack
+    POP     EAX
+    POP     EBX
+    POP     EDI
+    POP     ESI
+    mDisplayString  [EBP + 44]
+    JMP     _getString
+
+_overflowAtAddition:
+    ; Realign stack
+    POP     EBX
+    POP     EDI
+    POP     ESI
+    mDisplayString [EBP + 44]
+    JMP     _getString
 
 ReadVal ENDP
 
@@ -433,25 +485,129 @@ calculateSum    PROC
     PUSH    EDI
     PUSH    ECX
     PUSH    EBX
-    PUSH    EDX
+    PUSH    EAX
 
+    ; Loop through every integer (x10) in array
     MOV     ECX, 10
 
+    ; LOOP PRECONDITIONS
     ; Move array address into ESI (array address at [EBP + 8]
     MOV     ESI, [EBP + 8]
     ; Move totalSum data variable address into EDI
     MOV     EDI, [EBP + 12]
-
     ; Loop 10 times for 10 integers in array
     MOV     ECX, 10
 
 _startLoop:
-    ; Move current array immediate into EBX
+    ; Move current array immediate val into EBX
     MOV     EBX, [ESI]
-    ; Move current running sum into EDX
-    MOV     EDX, [EDI]
+    ; Extract current running sum into EDX
+    MOV     EAX, [EDI]
+    ; Add array immediate to current running sum. Must be current running sum + array value as array value could be negative
+    ADD     EAX, EBX
+    ; Restore new sum into [EDI], which points to running sum address
+    MOV     [EDI], EAX
+    ; Increment array pointer by SDWORD type = 4
+    ADD     ESI, 4
+       
+    LOOP _startLoop
 
+    POP     EAX
+    POP     EBX
+    POP     ECX
+    POP     EDI
+    POP     ESI
+    POP     EBP
+
+    RET     8
 
 calculateSum    ENDP
+
+WriteVal    PROC
+    PUSH    EBP
+    MOV     EBP, ESP
+
+    PUSH    ESI
+    PUSH    EAX
+    PUSH    EBX
+    PUSH    EDX
+    PUSH    EDI
+
+    ; Determine if passed integer to convert [EBP + 8] is negative
+    ; EAX becomes dividend at this line
+    MOV     EAX, [EBP + 8]
+    CMP     EAX, 0
+    JNS     _loopPreconditions
+    ; Convert to positive number and set isNegativeNum to true (1)
+    NEG     EAX
+    MOV     ESI, [EBP + 16]
+    MOV     EBX, 1
+    MOV     [ESI], EBX
+    ; ESI and EBX register current values not needed after here. 
+    
+_loopPreconditions:
+    ; Point EDI to second to last element in userInputStringVal. Last BYTE will always be numm term 0. Loop will insert bytes in reverse starting at 10th element
+    MOV     EDI, [EBP + 12]
+    ADD     EDI, 9
+    ; Use post-test loop to sequentially divide integer. Append ASCII codes to output string in REVERSE. 
+_startLoop:
+    ; isNegativeNum stays = 0, positive dividend in EAX
+
+    ; Clear EDX
+    CDQ
+    ; Divisor always 10
+    MOV     EBX, 10
+    IDIV    EBX
+
+    ; Remainder in EDX, = the furthest right digit from dividend
+    ; Convert value in remainder to its corresponding ASCII code.
+    ADD     EDX, 48
+
+    PUSH    EAX
+    MOV     EAX, EDX
+    STD
+    STOSB
+    POP     EAX
+
+     ; Post test will CMP EAX, 0 after dividing. If quotient (EAX) = 0, then we've reached the last digit
+    CMP     EAX, 0
+    JNZ     _startLoop
+
+    ; At end of loop, need to check isNegativeNum variable. If negative, we need to add final MINUS SIGN ascii to beginning
+    MOV     ESI, [EBP + 16]
+    MOV     EBX, [ESI]
+    CMP     EBX, POSITIVE
+    JE      _exitProcedure
+    ; Add minus sign ascii
+    MOV     EAX, MINUS_SIGN_ASCII
+    STOSB
+
+_exitProcedure:
+    ; Reset isNegativeNum Variable to 0 as it originally was
+    MOV     EBX, 0
+    MOV     [ESI], EBX
+
+    ; Increment EDI pointer by 1 byte to point to first ASCII character
+    ADD     EDI, 1
+
+    ; EDI holds address of first address 
+    mDisplayString EDI
+
+    POP    EDI
+    POP    EDX
+    POP    EBX
+    POP    EAX
+    POP    ESI
+    POP    EBP
+    RET     16
+
+
+WriteVal    ENDP
+
+calculateRoundedAverage     PROC
+
+
+
+calculateRoundedAverage     ENDP
 
 END main
