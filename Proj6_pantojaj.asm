@@ -106,7 +106,6 @@ POSITIVE = 0
     writevalOutputString    BYTE    11 DUP(0)
     commaCounter            BYTE    0
     roundedAverageInt       SDWORD  ?
-    isMinimumSignedWord     BYTE    0
     
 
     ; Array
@@ -122,6 +121,13 @@ main PROC
     PUSH    OFFSET header4
     CALL    introduction
 
+
+; -----------------------------------------------------------
+; Calls ReadVal ten times. Each call to ReadVal asks for string input
+; from the user and returns an integer in userNumericVal. Once procedure returns,
+; the value returned is appended to userIntegersArray.
+;
+; -----------------------------------------------------------
     ; _getIntegers loop preconditions
     MOV     ECX, 10
     MOV     ESI, OFFSET userIntegersArray
@@ -146,10 +152,22 @@ _getIntegers:
     
     LOOP    _getIntegers
 
+; -----------------------------------------------------------
+;  Calculate the sum of the 10 saved values in userIntegersArray
+; (saved in totalSum)
+; -----------------------------------------------------------
+
     ; Calculate sum of the obtained integers in array
     PUSH    OFFSET totalSum
     PUSH    OFFSET userIntegersArray
     CALL    calculateSum
+
+; -----------------------------------------------------------
+; Output to the terminal each SDWORD integer in userIntegersArray
+; to its string form using WriteVal. Because there are 10 integers in the array,
+; call WriteVal 10 times.
+;
+; -----------------------------------------------------------
 
     ; Display "You entered following numbers:" string
     CALL    CrLf
@@ -177,6 +195,13 @@ _displayIntsAsStrings:
 _writevalLoopInstruction:
     LOOP    _displayIntsAsStrings
 
+; -----------------------------------------------------------
+; Using WriteVal, output the totalSum SDWORD integer value in its string
+; representation obtained; by calling calculateSum above. Then calculate 
+; the rouned average and output that SDWORD integer value in its string representation
+; using WriteVal as well.
+;
+; -----------------------------------------------------------
 
     ; Output sum strings
     CALL    CrLf
@@ -204,6 +229,11 @@ _writevalLoopInstruction:
     PUSH    OFFSET writevalOutputString
     PUSH    roundedAverageInt
     CALL    WriteVal
+
+; -----------------------------------------------------------
+; Display a farewell message.
+;
+; -----------------------------------------------------------
 
     ; Display farewell
     CALL    CrLf
@@ -647,6 +677,25 @@ calculateSum    ENDP
 ; --------------------------------------------------------------------------------------------------
 ; Name: WriteVal
 ;
+; WriteVal takes an immediate integer value as a parameter, converts that value into its string representation,
+; and outputs that string representation to the terminal. The procedure breaks down the integer value starting
+; from the ones place and moves left to higher powers. Thus, the string representation is written in reverse into
+; the output (writevalOutputString). 
+;
+; Preconditions: writevalOutputString should be initially declared in the data section as an 11 element byte array filled with 0's
+;
+;
+; Receives:
+;       [EBP + 20] =  SIZEOF writevalOutputString. 
+;       [EBP + 16] = isNegativeNum address. Used as a boolean to track if the passed value to convert is negative
+;       [EBP + 12] = writevalOutputString address. Output parameter where the final string representation
+;                   of the integer to be converted will be stored.
+;       [EBP + 8] = an immediate SDWORD value to convert to its string representation
+;       MINUS_SIGN_ASCII and POSITIVE, global constants
+;
+; Returns:
+;       writevalOutputString: modified and not restored. Towards end of the procedure, mDisplayString is used
+;       to display the string that WriteVal outputted to writevalOutputString. Upon procedure return, writevalOutputString is not restored.
 ; --------------------------------------------------------------------------------------------------
 WriteVal    PROC
     PUSH    EBP
@@ -678,6 +727,7 @@ WriteVal    PROC
     INC     EAX
     NEG     EAX
 
+    ; Point EDI to second to last element in userInputStringVal. Last BYTE will always be null term 0. Loop will insert bytes in reverse starting at 10th element
     MOV     EDI, [EBP + 12]
     ADD     EDI, 9
 
@@ -759,6 +809,17 @@ WriteVal    ENDP
 ; --------------------------------------------------------------------------------------------------
 ; Name: calculateRoundedAverage
 ;
+; Calculates the rounded average of the integers obtained from ReadVal being called 10 times.
+;
+; Preconditions: Requires that totalSum be calculated already. 
+; 
+; Receives:
+;       [EBP + 12] = totalSum data address. Used as input to calculate rounded average.
+;       [EBP + 8] = roundedAverageInt output parameter address. 
+;
+; Returns:
+;       roundedAverageInt: the calculated rounded average is stored in this variable.
+;
 ; --------------------------------------------------------------------------------------------------
 calculateRoundedAverage     PROC
     PUSH    EBP
@@ -784,9 +845,10 @@ calculateRoundedAverage     PROC
     CDQ
     IDIV    EBX
     
-    ; Quotient in EAX
+    ; Quotient in EAX. Save result in roundedAverage variable
     MOV     [EDI], EAX
 
+    ; Restore registers
     POP     EDI
     POP     ESI
     POP     EBX
@@ -794,7 +856,6 @@ calculateRoundedAverage     PROC
     POP     EAX
     POP     EBP
     RET     8
-
 
 calculateRoundedAverage     ENDP
 
