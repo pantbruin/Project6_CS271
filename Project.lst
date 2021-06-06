@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
+Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:07:14
 "Project 6     (Proj6_pantojaj.asm			     Page 1 - 1
 
 
@@ -31,7 +31,18 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
 			      C .LIST
 			      C 
 
-				; (insert macro definitions here)
+				; --------------------------------------------------------------------------------------------------
+				; Name: mDisplayString
+				;
+				; Writes a passed string (from address) to terminal.
+				;
+				; Preconditions: Do not use EDX as arguments
+				;
+				; Receives:
+				;       strAddr = the starting address of the string to output
+				; 
+				; 
+				; --------------------------------------------------------------------------------------------------
 				mDisplayString MACRO strAddr
 				    PUSH    EDX
 				    MOV     EDX, strAddr
@@ -39,13 +50,32 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
 				    POP     EDX
 				ENDM
 
+
+				; --------------------------------------------------------------------------------------------------
+				; Name: mGetString
+				;
+				; Prompts the user to enter an integer as a string, then reads and saves the input string to memory. Uses Irvine
+				; library ReadString 
+				;
+				; Preconditions: Do not use EDX, ECX, or EDI as arguments
+				;
+				; Receives:
+				;       promptAddr = The address of the string giving instructions to the user to enter a number
+				;       inputStringAddr = The address to save the user's input to. 
+				;       maxStrLength = an immediate value denoting the max number of bytes to read from the user
+				;       charsReadAddr = the address of a data variable to save the number of bytes read from the user's input.
+				;
+				; --------------------------------------------------------------------------------------------------
 				mGetString MACRO promptAddr, inputStringAddr, maxStrLength, charsReadAddr
+				    ; Save used registers
 				    PUSH    EDX
 				    PUSH    ECX
 				    PUSH    EDI
 				    
 				    ; Prompt user (string)
 				    mDisplayString promptAddr
+				    
+				    ; ReadString preconditions
 				    MOV     ECX, maxStrLength
 				    MOV     EDX, inputStringAddr
 				    CALL    ReadString
@@ -57,11 +87,8 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
 				    POP     EDI
 				    POP     ECX
 				    POP     EDX
-
-
 				ENDM
 
-				; (insert constant definitions here)
  = 0000000D			MAX_STRING_LENGTH = 13   ; Max # of digits in a 32 bit SWORD integer is 10. 11 accounts for sign, 12 for null terminator. 13 is used for length validation.
  = 0000000B			MAX_CHARS_ALLOWED = 11
  = 0000002B			PLUS_SIGN_ASCII = 43
@@ -72,7 +99,7 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  = 00000000			POSITIVE = 0
 
  00000000			.data
-				    ; Strings
+				    ; Output strings
  00000000 50 52 4F 47 52	    header1                 BYTE    "PROGRAMMING ASSIGNMENT 6: Designing low-level I/O procedures", 13, 10, 0
 	   41 4D 4D 49 4E
 	   47 20 41 53 53
@@ -234,26 +261,27 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
 	   ]
  000002DF 00			    commaCounter            BYTE    0
  000002E0 00000000		    roundedAverageInt       SDWORD  ?
+ 000002E4 00			    isMinimumSignedWord     BYTE    0
 				    
 
 				    ; Array
- 000002E4  0000000B [		    userIntegersArray       SDWORD  11 DUP(?)
+ 000002E5  0000000B [		    userIntegersArray       SDWORD  11 DUP(?)
 	    00000000
 	   ]
 
  00000000			.code
  00000000			main PROC
 
-				; (insert executable instructions here)
+
  00000000  68 00000000 R	    PUSH    OFFSET header1
  00000005  68 0000003F R	    PUSH    OFFSET header2
  0000000A  68 0000005D R	    PUSH    OFFSET header3
  0000000F  68 000000B1 R	    PUSH    OFFSET header4
  00000014  E8 00000133		    CALL    introduction
 
+				    ; _getIntegers loop preconditions
  00000019  B9 0000000A		    MOV     ECX, 10
- 0000001E  BE 000002E4 R	    MOV     ESI, OFFSET userIntegersArray
-
+ 0000001E  BE 000002E5 R	    MOV     ESI, OFFSET userIntegersArray
  00000023			_getIntegers:
 				    ; Call Read Val x10 
  00000023  68 0000027A R	    PUSH    OFFSET overflowString
@@ -277,7 +305,7 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
 
 				    ; Calculate sum of the obtained integers in array
  00000064  68 000002D0 R	    PUSH    OFFSET totalSum
- 00000069  68 000002E4 R	    PUSH    OFFSET userIntegersArray
+ 00000069  68 000002E5 R	    PUSH    OFFSET userIntegersArray
  0000006E  E8 0000028F		    CALL    calculateSum
 
 				    ; Display "You entered following numbers:" string
@@ -289,9 +317,9 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  00000083  E8 00000000 E     1	    CALL    WriteString
  00000088  5A		     1	    POP     EDX
 
-				    ; Call WriteVal 10 times, each time pushing a value from userIntegersArray. For debugging, only do first val for now
+				    ; Call WriteVal 10 times, each time pushing a value from userIntegersArray. 
 				    ; Reset isNegativeNum to false
- 00000089  BE 000002E4 R	    MOV     ESI, OFFSET userIntegersArray
+ 00000089  BE 000002E5 R	    MOV     ESI, OFFSET userIntegersArray
  0000008E  B9 0000000A		    MOV     ECX, 10
 
  00000093			_displayIntsAsStrings:
@@ -300,7 +328,7 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  0000009A  68 000002D4 R	    PUSH    OFFSET writevalOutputString
 				    ; Push VALUE at current address of userIntegersArray
  0000009F  FF 36		    PUSH    [ESI]
- 000000A1  E8 0000028A		    CALL    WriteVal
+ 000000A1  E8 00000285		    CALL    WriteVal
  000000A6  83 C6 04		    ADD     ESI, 4
 
  000000A9  80 3D 000002DF R	    CMP     commaCounter, 9
@@ -329,12 +357,12 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  000000DE  68 000002CC R	    PUSH    OFFSET isNegativeNum
  000000E3  68 000002D4 R	    PUSH    OFFSET writevalOutputString
  000000E8  FF 35 000002D0 R	    PUSH    totalSum
- 000000EE  E8 0000023D		    CALL    WriteVal
+ 000000EE  E8 00000238		    CALL    WriteVal
 
 				    ; Calculate rounded average
  000000F3  68 000002D0 R	    PUSH    OFFSET totalSum
  000000F8  68 000002E0 R	    PUSH    OFFSET roundedAverageInt
- 000000FD  E8 00000292		    CALL    calculateRoundedAverage
+ 000000FD  E8 000002AB		    CALL    calculateRoundedAverage
 
 				    ; Display rounded average
  00000102  E8 00000000 E	    CALL    CrLf
@@ -349,7 +377,7 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  0000011A  68 000002CC R	    PUSH    OFFSET isNegativeNum
  0000011F  68 000002D4 R	    PUSH    OFFSET writevalOutputString
  00000124  FF 35 000002E0 R	    PUSH    roundedAverageInt
- 0000012A  E8 00000201		    CALL    WriteVal
+ 0000012A  E8 000001FC		    CALL    WriteVal
 
 				    ; Display farewell
  0000012F  E8 00000000 E	    CALL    CrLf
@@ -367,8 +395,19 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  00000147  E8 00000000 E   *	    call   ExitProcess
  0000014C			main ENDP
 
-				; (insert additional procedures here)
-
+				; --------------------------------------------------------------------------------------------------
+				; Name: introduction
+				;
+				; Outputs program header and instructions for user strings to the terminal. Uses mDisplayString macro
+				; to output strings.
+				;
+				; Receives:
+				;    [EBP + 20] = header1 address. Program title string.
+				;    [EBP + 16] = header2 address. "Programmed by.." string 
+				;    [EBP + 12] = header3 address. String describing what the user should be inputting
+				;    [EBP + 8] = header4 address. String describing what the program will output
+				;
+				; --------------------------------------------------------------------------------------------------
  0000014C			introduction PROC
 				    ; Create stack frame
  0000014C  55			    PUSH    EBP
@@ -399,6 +438,44 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  00000178  C2 0010		    RET     16
  0000017B			introduction ENDP
 
+				; --------------------------------------------------------------------------------------------------
+				; Name: ReadVal
+				;
+				; Uses mGetString macro to get a single, valid signed number (as a string) from the user. The procedure
+				; will continuously ask for input until valid input is entered. Valid input are strings that start with
+				; a digit, +, or -; strings that fit inside a 32 bit register; strings with no other characters but
+				; digits after the first character; non-empty strings. ReadVal will takes a valid input (as a string) and
+				; convert it to an SDWORD integer and outputs that integer into SDWORD userNumericVal.
+				; 
+				; Postconditions: None. All registers are restored before and after procedure call.
+				;
+				; Receives:
+				;    [EBP + 44] = overflowString. Address of string to output to terminal when user entered a number to big for a 32bit reg.
+				;    [EBP + 40] = isNegativeNum boolean address. input/output param to denote if the user's input is a negative number. 
+				;    [EBP + 36] = userInputNumericVal data output parameter. When ReadVal converts a valid input to a SDWORD integer,
+				;                 it outputs the value at this address. 
+				;    [EBP + 32] = invalidIntStr. Address of string to output to terminal when user did not enter a signed number.
+				;    [EBP + 28] = invalidCharAmount2. Address of string to output to terminal when inputted string is empty.
+				;    [EBP + 24] = invalidCharAmount. Address of string to output to terminal when inputted string has too many characters.
+				;    [EBP + 20] = numCharsInputted data address as output param. Used as arg for mGetString and later for string validation. 
+				;                 numCharsInputted value is the integer number of characters inputted by the user.
+				;    [EBP + 16] = MAX_STRING_LENGTH immediate value. Used as mGetString argument and for string validation.
+				;    [EBP + 12] = userInputString data output address. mGetString receives this address to write the user's string input at said address.
+				;    [EBP + 8] = promptUser string address. String outputted to prompt user to enter a signed number.
+				;    MAX_CHARS_ALLOWED, ZERO_ASCII, NINE_ASCII, PLUS_SIGN_ASCII, MINUS_SIGN_ASCII, POSITIVE are global constants.
+				;
+				;   Returns:
+				;       userInputString: Data variable always modified for every call to ReadVal. Used as an input/output parameter
+				;                       to save the user's inputted string as an array of bytes. Every call to ReadVal overwrites previous strings in the variable, if any. 
+				;       numCharsInputted: Data variable always modified for every call to ReadVal. Used as an input/output parameter
+				;                         to save the number of characters the user inputted when mGetString macro is invoked within procedure.
+				;                         Every call to ReadVal overwrites previous value, if any. 
+				;       userInputNumericVal: ReadVal's primary output. This variable will hold the integer SDWORD type after ReadVal
+				;                           converts the user's string to integer. 
+				;       isNegativeNum: May be modified in a ReadVal call, but is always restored before procedure returns. 
+				;
+				;
+				; --------------------------------------------------------------------------------------------------
  0000017B			ReadVal PROC
  0000017B  55			    PUSH    EBP
  0000017C  8B EC		    MOV     EBP, ESP
@@ -411,7 +488,6 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  00000182  56			    PUSH    ESI
 				    
  00000183			_getString:
-				    ; Args: promptUser addr, userInputStringAddr addr, MAX_STRING_LENGTH val, numCharsInputted addr
 				    ; Reset isNegativeNum variable to positive
  00000183  8B 7D 28		    MOV     EDI, [EBP + 40]
  00000186  BB 00000000		    MOV     EBX, 0
@@ -421,6 +497,7 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  00000190  BB 00000000		    MOV     EBX, 0
  00000195  89 1F		    MOV     [EDI], EBX
 
+				    ; Args: promptUser addr, userInputStringAddr addr, MAX_STRING_LENGTH val, numCharsInputted addr
 				    mGetString [EBP + 8], [EBP + 12], [EBP + 16], [EBP + 20]
  00000197  52		     1	    PUSH    EDX
  00000198  51		     1	    PUSH    ECX
@@ -443,7 +520,7 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  000001B7  8B 75 14		    MOV     ESI, [EBP + 20]
  000001BA  8B 1E		    MOV     EBX, [ESI]
  000001BC  83 FB 0B		    CMP     EBX, MAX_CHARS_ALLOWED
-				    ; If numCharsInputted < 11, jump to next check, else display error and jump back to mGetString
+				    ; If numCharsInputted < 11, jump to next check, else display error and ask for another input.
  000001BF  7E 0C		    JLE     _checkForNullString
 				    mDisplayString [EBP + 24]
  000001C1  52		     1	    PUSH    EDX
@@ -463,30 +540,30 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  000001DB  5A		     1	    POP     EDX
  000001DC  EB A5		    JMP     _getString
 				 
-				    ; Check that first character is a +, -, or digit character
+				    ; Check that first character is valid. I.e. a +, -, or digit character. Use LODSB from beginning of string
  000001DE			_checkForValidFirstChar:
  000001DE  FC			    CLD
 				    ; Change ESI from num of chars inputted to inputStringAddress 
- 000001DF  8B 75 0C		    MOV ESI, [EBP + 12]
+ 000001DF  8B 75 0C		    MOV     ESI, [EBP + 12]
 				    ; Copy first char of userInput into AL
  000001E2  AC			    LODSB
 
-				    ; AL must be 43 OR 45 OR (48 <= AL <= 57)
- 000001E3  3C 2B		    CMP AL, PLUS_SIGN_ASCII
-				    ; Check that theres more than 1 char before confirming valid input
- 000001E5  74 18		    JE  _checkMoreThanOneChar
+				    ; AL byte value must be ASCIIs 43 OR 45 OR (48 <= AL <= 57)
+ 000001E3  3C 2B		    CMP     AL, PLUS_SIGN_ASCII
+				    ; If first char is plus sign, check that theres more than 1 char before confirming valid input
+ 000001E5  74 18		    JE      _checkMoreThanOneChar
 
- 000001E7  3C 2D		    CMP AL, MINUS_SIGN_ASCII
-				    ; Check that theres more than 1 char before confirming valid input
- 000001E9  74 14		    JE  _checkMoreThanOneChar
+ 000001E7  3C 2D		    CMP     AL, MINUS_SIGN_ASCII
+				    ; If first char is minus sign, check that theres more than 1 char before confirming valid input
+ 000001E9  74 14		    JE      _checkMoreThanOneChar
 
-				    ; If AL val < 48 (0), first char must be invalid, else check if val > 57 (9)
- 000001EB  3C 30		    CMP AL, ZERO_ASCII
- 000001ED  7C 04		    JL  _stringInvalid
+				    ; If AL val < 48 (ASCII for 0), first char must be invalid, else check if val > 57 (ASCII for 9)
+ 000001EB  3C 30		    CMP     AL, ZERO_ASCII
+ 000001ED  7C 04		    JL      _stringInvalid
 
-				    ; If AL val <= NINE_ASCII, then first char at this point is valid
- 000001EF  3C 39		    CMP AL, NINE_ASCII
- 000001F1  7E 16		    JLE _firstCharValid
+				    ; If AL val <= NINE_ASCII, then first char must be valid at this point
+ 000001EF  3C 39		    CMP     AL, NINE_ASCII
+ 000001F1  7E 16		    JLE     _firstCharValid
 
 				    ; Output error string and ask for input again
  000001F3			_stringInvalid:
@@ -502,52 +579,61 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
 				    ; [EBP + 20] = numCharsInputted Address
  000001FF  8B 4D 14		    MOV     ECX, [EBP + 20]
  00000202  8B 19		    MOV     EBX, [ECX]
-				    ; If numCharsInputted value = 1, first char is valid but no valid number was inputted. Else, input is valid.
+				    ; If numCharsInputted value = 1 and char is + or -, first char is valid but no valid number was inputted. Else, input is valid.
  00000204  83 FB 01		    CMP     EBX, 1
  00000207  74 EA		    JE      _stringInvalid
 				   
+				   ; First character is valid and/or there is more than one character.
  00000209			_firstCharValid:
-				    ; Check current val in AL (first val). 
+				    ; Assess first character outside of loop. 
+				    ; If plus sign or minus sign, we don't have to convert to its SDWORD value. Go to next character
  00000209  3C 2B		    CMP     AL, PLUS_SIGN_ASCII
  0000020B  74 1D		    JE      _loopPreconditions
 
+				    ; If first char is a minus sign, then set isNegativeNum. 
  0000020D  3C 2D		    CMP     AL, MINUS_SIGN_ASCII
+				    ; Else, first character is a digit, process this number outside of loop.
  0000020F  75 10		    JNE      _firstCharIsDigit
-				    ; First char is a minus sign, set isNegativeNum to 1
+
  00000211  56			    PUSH    ESI
  00000212  57			    PUSH    EDI
 				    ; [EBP + 40] = isNegativeNum variable address
  00000213  8B 7D 28		    MOV     EDI, [EBP + 40]
  00000216  BE 00000001		    MOV     ESI, 1
-				    ; Set isNegativeNum = 1 because first character is a negative sign
+				    ; Set isNegativeNum = 1
  0000021B  89 37		    MOV     [EDI], ESI
  0000021D  5F			    POP     EDI
  0000021E  5E			    POP     ESI
  0000021F  EB 09		    JMP     _loopPreconditions
 
 				  ; Else, first char is a digit. Need to take it into account outside of loop for conversion to an int
-				  ; Since userInputNumericVal starts up building from 0, the variable will always be set = first digit val (10* 0 + (ascii code - 48))
+				  ; Since userInputNumericVal starts up building from 0, the variable will always be set equal to whatever the first digit is. (10* 0 + (ascii code - 48))
  00000221			_firstCharIsDigit:
  00000221  56			    PUSH    ESI
 				    ;[EBP + 36] = userInputNumericVal address, save address in ESI
  00000222  8B 75 24		    MOV     ESI, [EBP + 36]
+				    ; Convert from ASCII to integer
  00000225  2C 30		    SUB     AL, 48
  00000227  89 06		    MOV     [ESI], EAX
  00000229  5E			    POP     ESI
 
+				    ; Set loop counters based on the number of characters inputted.
  0000022A			_loopPreconditions:
  0000022A  56			    PUSH    ESI
 				    ; [EBP + 20] = numCharsInputted Data address
  0000022B  8B 75 14		    MOV     ESI, [EBP + 20]
  0000022E  8B 0E		    MOV     ECX, [ESI]
-				    ; ECX should equal numCharsInputted - 1 as first character already accounted for
+				    ; ECX should always start off at numCharsInputted - 1 as first character already accounted for above.
  00000230  49			    DEC     ECX
  00000231  8B 1E		    MOV     EBX, [ESI]
-				    ; If numCharsInputted >= 10, we will need to stop at second to last digit to determine if final number fits in 32 bit reg
-				    ; First restore ESI (pointing to the next character to evaluate in user string) as we no longer need numCharsInputted
+				    ; Restore ESI (to point to the next character to evaluate in user string). No longer need numCharsInputted
  00000233  5E			    POP     ESI
+
+				    ; If EBX holds the numCharsInputted value. If numCharsInputted = 1, then skip loop as integer is single digit.
  00000234  83 FB 01		    CMP     EBX, 1
  00000237  74 2D		    JE      _skipLoop
+				    
+				    ; If numCharsInputted >= 10, loop to second to last character digit to determine if final digit will fit in a 32 bit reg
  00000239  83 FB 0A		    CMP     EBX, 10
  0000023C  7C 01		    JL      _startLoop
 				    ; Loop up to second to last digit 
@@ -583,7 +669,7 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
 				    ; Current character's ASCII code - 48. Restore EAX first
  0000025A  58			    POP     EAX
  0000025B  2C 30		    SUB     AL, 48
-				    ; Final result in EBX, save this new value in userNumericVal
+				    ; Final result in EBX, output this value in userNumericVal
  0000025D  03 D8		    ADD     EBX, EAX
  0000025F  89 1E		    MOV     [ESI], EBX
  00000261  5B			    POP     EBX
@@ -592,18 +678,20 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
 
  00000264  E2 D9		    LOOP    _startLoop
 
+				    ; Jumped to here when numCharsInputted is 1.
  00000266			_skipLoop:
-				    ; DETERMINE IF RUNNING VALUE NEEDS TO BE NEGATED
-				    ; PUSH    EBX unecessary because old ebx value is numCharsinputted, useless
+				    ; userNumericVal always first computed as positive value. Convert to negative integer if user inputted negative value here
  00000266  56			    PUSH    ESI
 				    ; [EBP + 40] = isNegativeNum address
  00000267  8B 75 28		    MOV     ESI, [EBP + 40]
  0000026A  8B 1E		    MOV     EBX, [ESI]
 				    ; Restore ESI, as we've obtained isNegativeNum value already
  0000026C  5E			    POP     ESI
+				    
+				    ; If isNegativeNum is negative, negate userNumericVal. Else skip negating
  0000026D  83 FB 00		    CMP     EBX, POSITIVE
  00000270  74 0B		    JE      _skipNegating
-				    ; Negate running value
+				    ; Negate running value in userNumericVal
  00000272  57			    PUSH    EDI
 				    ; Move userNumericVal address into EDI
  00000273  8B 7D 24		    MOV     EDI, [EBP + 36]
@@ -615,12 +703,8 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  0000027C  5F			    POP     EDI
 
  0000027D			_skipNegating:
-				    ; Restore EBX here from its push after loop end
-				    ; POP     EBX from line 352 push
-
 				    ; Next compare numOfCharsInputted by user >= 10 to check if final value fits in 32 bit reg.
-				    ; Skip and exit procedure if not. 
-				    ; PUSH    EBX unecessary push
+				    ; Skip and exit procedure if < 10
  0000027D  56			    PUSH    ESI
 				    ; [EBP + 20] = numOfCharsInputted
  0000027E  8B 75 14		    MOV     ESI, [EBP + 20]
@@ -632,7 +716,7 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  00000287  7C 41		    JL      _exitProcedure
 				    ; Else compute last digit on its own. 
  00000289  AC			    LODSB
-				    ; precondition to first check that current char is a digit. Break out and display error if not. 
+				    ; Precondition to first check that last char is a digit. Break out and display error if not. 
 				    ; If AL val < 48 (0), current char is invalid, else check if val > 57 (9)
  0000028A  3C 30		    CMP AL, ZERO_ASCII
  0000028C  0F 8C FFFFFF61	    JL  _stringInvalid
@@ -655,7 +739,7 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  000002A3  B8 0000000A		    MOV     EAX, 10
 				    ; Result in EAX
  000002A8  F7 EF		    IMUL     EDI
-				    ; Jump to stringInvalid if 10*userNumericVal triggers overflow
+				    ; If overflow flag is set, then number is too big for 32 bit. Ask for another number.
  000002AA  70 31		    JO      _overflowAtMultiplication
 
 				    ; Else Save 10*userNumericVal from EAX to EBX
@@ -674,27 +758,28 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  000002BB  74 02		    JE      _skipNegatingLastDigit
  000002BD  F7 D8		    NEG     EAX
 
-				    ; Final result in EBX, save this new value in userNumericVal
  000002BF			_skipNegatingLastDigit:
-				    ; Restore registers from block starting line 351
+				    ; Restore registers from line 527
  000002BF  5F			    POP     EDI
  000002C0  5E			    POP     ESI
 
+				    ; Last multiplication operation result was saved in EBX. 
  000002C1  03 D8		    ADD     EBX, EAX
-				    ; Jump to stringInvalid if (10*userNumericVal) + integer triggers overflow
+				    ; If addition step triggers overflow flag, number is too big to fit in 32 bit reg. Ask for new input.
  000002C3  70 2B		    JO      _overflowAtAddition
+				    ; Else save final value in userNumericVal
  000002C5  89 1E		    MOV     [ESI], EBX
  000002C7  5B			    POP     EBX
  000002C8  5F			    POP     EDI
  000002C9  5E			    POP     ESI
 
  000002CA			_exitProcedure: 
-				    ; Reset isNegativeNum to 0, it's original parameter value
+				    ; Reset isNegativeNum to 0, it's original parameter value before procedure exit.
  000002CA  8B 75 28		    MOV     ESI, [EBP + 40]
  000002CD  BB 00000000		    MOV     EBX, 0
  000002D2  89 1E		    MOV     [ESI], EBX
 
-				    ; Clean up stack
+				    ; Clean up stack from inital registers saved at start of procedure.
  000002D4  5E			    POP     ESI
  000002D5  5A			    POP     EDX
  000002D6  59			    POP     ECX
@@ -704,7 +789,7 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  000002DA  C2 0024		    RET     36
 
  000002DD			_overflowAtMultiplication:
-				    ; Realign stack
+				    ; Realign stack before asking for a new input.
  000002DD  58			    POP     EAX
  000002DE  5B			    POP     EBX
  000002DF  5F			    POP     EDI
@@ -717,7 +802,7 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  000002EB  E9 FFFFFE93		    JMP     _getString
 
  000002F0			_overflowAtAddition:
-				    ; Realign stack
+				    ; Realign stack before asking for a new input.
  000002F0  5B			    POP     EBX
  000002F1  5F			    POP     EDI
  000002F2  5E			    POP     ESI
@@ -731,81 +816,101 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  00000302			ReadVal ENDP
 
 
+				; --------------------------------------------------------------------------------------------------
+				; Name: calculateSum
+				; 
+				; Calculates the total sum of the values in userIntegersArray. 
+				;
+				; Preconditions: Requires that userIntegersArray is filled with 10 integers by calling ReadVal multiple times.
+				;
+				; Receives:
+				;       [EBP + 12] = totalSum data adress. Used as an input/output parameter to store the total sum of the integers in userIntegersArray
+				;       [EBP + 8] = userIntegersArray address. Used as an input parameter to extract the values in the array to calculate the sum.
+				;
+				; Returns:
+				;       totalSum: upon procedure return, the total sum of the values in the userIntegersArray is stored in this variable.
+				;
+				; --------------------------------------------------------------------------------------------------
  00000302			calculateSum    PROC
  00000302  55			    PUSH    EBP
  00000303  8B EC		    MOV     EBP, ESP
 
+				    ; Save used registers
  00000305  56			    PUSH    ESI
  00000306  57			    PUSH    EDI
  00000307  51			    PUSH    ECX
  00000308  53			    PUSH    EBX
  00000309  50			    PUSH    EAX
 
-				    ; Loop through every integer (x10) in array
- 0000030A  B9 0000000A		    MOV     ECX, 10
-
 				    ; LOOP PRECONDITIONS
 				    ; Move array address into ESI (array address at [EBP + 8]
- 0000030F  8B 75 08		    MOV     ESI, [EBP + 8]
+ 0000030A  8B 75 08		    MOV     ESI, [EBP + 8]
 				    ; Move totalSum data variable address into EDI
- 00000312  8B 7D 0C		    MOV     EDI, [EBP + 12]
+ 0000030D  8B 7D 0C		    MOV     EDI, [EBP + 12]
 				    ; Loop 10 times for 10 integers in array
- 00000315  B9 0000000A		    MOV     ECX, 10
+ 00000310  B9 0000000A		    MOV     ECX, 10
 
- 0000031A			_startLoop:
+ 00000315			_startLoop:
 				    ; Move current array immediate val into EBX
- 0000031A  8B 1E		    MOV     EBX, [ESI]
+ 00000315  8B 1E		    MOV     EBX, [ESI]
 				    ; Extract current running sum into EDX
- 0000031C  8B 07		    MOV     EAX, [EDI]
+ 00000317  8B 07		    MOV     EAX, [EDI]
 				    ; Add array immediate to current running sum. Must be current running sum + array value as array value could be negative
- 0000031E  03 C3		    ADD     EAX, EBX
+ 00000319  03 C3		    ADD     EAX, EBX
 				    ; Restore new sum into [EDI], which points to running sum address
- 00000320  89 07		    MOV     [EDI], EAX
+ 0000031B  89 07		    MOV     [EDI], EAX
 				    ; Increment array pointer by SDWORD type = 4
- 00000322  83 C6 04		    ADD     ESI, 4
+ 0000031D  83 C6 04		    ADD     ESI, 4
 				       
- 00000325  E2 F3		    LOOP _startLoop
+ 00000320  E2 F3		    LOOP _startLoop
 
- 00000327  58			    POP     EAX
- 00000328  5B			    POP     EBX
- 00000329  59			    POP     ECX
- 0000032A  5F			    POP     EDI
- 0000032B  5E			    POP     ESI
- 0000032C  5D			    POP     EBP
+				    ; Restore registers before procedure return
+ 00000322  58			    POP     EAX
+ 00000323  5B			    POP     EBX
+ 00000324  59			    POP     ECX
+ 00000325  5F			    POP     EDI
+ 00000326  5E			    POP     ESI
+ 00000327  5D			    POP     EBP
+ 00000328  C2 0008		    RET     8
 
- 0000032D  C2 0008		    RET     8
+ 0000032B			calculateSum    ENDP
 
- 00000330			calculateSum    ENDP
+				; --------------------------------------------------------------------------------------------------
+				; Name: WriteVal
+				;
+				; --------------------------------------------------------------------------------------------------
+ 0000032B			WriteVal    PROC
+ 0000032B  55			    PUSH    EBP
+ 0000032C  8B EC		    MOV     EBP, ESP
 
- 00000330			WriteVal    PROC
- 00000330  55			    PUSH    EBP
- 00000331  8B EC		    MOV     EBP, ESP
+				    ; Save used registers
+ 0000032E  56			    PUSH    ESI
+ 0000032F  50			    PUSH    EAX
+ 00000330  53			    PUSH    EBX
+ 00000331  52			    PUSH    EDX
+ 00000332  57			    PUSH    EDI
 
- 00000333  56			    PUSH    ESI
- 00000334  50			    PUSH    EAX
- 00000335  53			    PUSH    EBX
- 00000336  52			    PUSH    EDX
- 00000337  57			    PUSH    EDI
-
-				    ; Determine if passed integer to convert [EBP + 8] is negative
-				    ; EAX becomes dividend at this line
- 00000338  8B 45 08		    MOV     EAX, [EBP + 8]
- 0000033B  83 F8 00		    CMP     EAX, 0
- 0000033E  79 0C		    JNS     _loopPreconditions
+				    ; Determine if passed integer (immediate) [EBP + 8] to convert to string is negative. If negative, convert to positive for easier processing
+ 00000333  8B 45 08		    MOV     EAX, [EBP + 8]      ; EAX contains starting dividend for loop at this line
+ 00000336  83 F8 00		    CMP     EAX, 0
+ 00000339  79 2A		    JNS     _loopPreconditions
 				    ; Convert to positive number and set isNegativeNum to true (1)
- 00000340  F7 D8		    NEG     EAX
- 00000342  8B 75 10		    MOV     ESI, [EBP + 16]
- 00000345  BB 00000001		    MOV     EBX, 1
- 0000034A  89 1E		    MOV     [ESI], EBX
+ 0000033B  F7 D8		    NEG     EAX
+				    ; Set isNegativeNum to 1
+ 0000033D  8B 75 10		    MOV     ESI, [EBP + 16]
+ 00000340  BB 00000001		    MOV     EBX, 1
+ 00000345  89 1E		    MOV     [ESI], EBX
 				    ; ESI and EBX register current values not needed after here. 
-				    
- 0000034C			_loopPreconditions:
-				    ; Point EDI to second to last element in userInputStringVal. Last BYTE will always be numm term 0. Loop will insert bytes in reverse starting at 10th element
+
+				    ; Also check if passed integer is minimum value in 32 bit register (-2,147,483,648) edge case (negating will cause overflow only for this input)
+ 00000347  71 1C		    JNO     _loopPreconditions
+				    ; Address edge case by processing last digit individually, outside of loop. 
+				    ; INC EAX to -2147483647 so we can negate without an overflow
+ 00000349  40			    INC     EAX
+ 0000034A  F7 D8		    NEG     EAX
+
  0000034C  8B 7D 0C		    MOV     EDI, [EBP + 12]
  0000034F  83 C7 09		    ADD     EDI, 9
-				    ; Use post-test loop to sequentially divide integer. Append ASCII codes to output string in REVERSE. 
- 00000352			_startLoop:
-				    ; isNegativeNum stays = 0, positive dividend in EAX
 
 				    ; Clear EDX
  00000352  99			    CDQ
@@ -814,94 +919,122 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
  00000358  F7 FB		    IDIV    EBX
 
 				    ; Remainder in EDX, = the furthest right digit from dividend
-				    ; Convert value in remainder to its corresponding ASCII code.
- 0000035A  83 C2 30		    ADD     EDX, 48
+				    ; Convert value in remainder to its corresponding ASCII code. +49 for this case because we want original number 8 not 7.
+ 0000035A  83 C2 31		    ADD     EDX, 49
 
  0000035D  50			    PUSH    EAX
  0000035E  8B C2		    MOV     EAX, EDX
  00000360  FD			    STD
  00000361  AA			    STOSB
  00000362  58			    POP     EAX
+				    ; Skip non-edge case loopPreconditions, as preconditions already established at beginning of edge case block above
+ 00000363  EB 06		    JMP     _startLoop
+				    
+ 00000365			_loopPreconditions:
+				    ; Point EDI to second to last element in userInputStringVal. Last BYTE will always be null term 0. Loop will insert bytes in reverse starting at 10th element
+ 00000365  8B 7D 0C		    MOV     EDI, [EBP + 12]
+ 00000368  83 C7 09		    ADD     EDI, 9
 
-				     ; Post test will CMP EAX, 0 after dividing. If quotient (EAX) = 0, then we've reached the last digit
- 00000363  83 F8 00		    CMP     EAX, 0
- 00000366  75 EA		    JNZ     _startLoop
+				    ; Use post-test loop to sequentially divide integer. Append ASCII codes to output string in REVERSE. 
+ 0000036B			_startLoop:
+				    ; Clear EDX
+ 0000036B  99			    CDQ
+				    ; Divisor always 10
+ 0000036C  BB 0000000A		    MOV     EBX, 10
+ 00000371  F7 FB		    IDIV    EBX
 
-				    ; At end of loop, need to check isNegativeNum variable. If negative, we need to add final MINUS SIGN ascii to beginning
- 00000368  8B 75 10		    MOV     ESI, [EBP + 16]
- 0000036B  8B 1E		    MOV     EBX, [ESI]
- 0000036D  83 FB 00		    CMP     EBX, POSITIVE
- 00000370  74 06		    JE      _exitProcedure
+				    ; Remainder in EDX, = the furthest right digit from dividend
+				    ; Convert value in remainder to its corresponding ASCII code.
+ 00000373  83 C2 30		    ADD     EDX, 48
+
+ 00000376  50			    PUSH    EAX
+ 00000377  8B C2		    MOV     EAX, EDX
+ 00000379  FD			    STD
+ 0000037A  AA			    STOSB
+ 0000037B  58			    POP     EAX
+
+				     ; Post test will CMP EAX, 0 after dividing. If quotient (EAX) = 0, then we've processed the last digit and done
+ 0000037C  83 F8 00		    CMP     EAX, 0
+ 0000037F  75 EA		    JNZ     _startLoop
+
+				    ; At end of loop, need to check isNegativeNum variable. If negative, we need to add final MINUS SIGN ascii to beginning of string
+ 00000381  8B 75 10		    MOV     ESI, [EBP + 16]
+ 00000384  8B 1E		    MOV     EBX, [ESI]
+ 00000386  83 FB 00		    CMP     EBX, POSITIVE
+ 00000389  74 06		    JE      _exitProcedure
 				    ; Add minus sign ascii
- 00000372  B8 0000002D		    MOV     EAX, MINUS_SIGN_ASCII
- 00000377  AA			    STOSB
+ 0000038B  B8 0000002D		    MOV     EAX, MINUS_SIGN_ASCII
+ 00000390  AA			    STOSB
 
- 00000378			_exitProcedure:
+ 00000391			_exitProcedure:
 				    ; Reset isNegativeNum Variable to 0 as it originally was
- 00000378  BB 00000000		    MOV     EBX, 0
- 0000037D  89 1E		    MOV     [ESI], EBX
+ 00000391  BB 00000000		    MOV     EBX, 0
+ 00000396  89 1E		    MOV     [ESI], EBX
 
-				    ; Increment EDI pointer by 1 byte to point to first ASCII character
- 0000037F  83 C7 01		    ADD     EDI, 1
+				    ; Increment EDI pointer by 1 byte to point to first ASCII character, as last STOSB decremented EDI. 
+ 00000398  83 C7 01		    ADD     EDI, 1
 
 				    ; EDI holds address of first address 
 				    mDisplayString EDI
- 00000382  52		     1	    PUSH    EDX
- 00000383  8B D7	     1	    MOV     EDX, EDI
- 00000385  E8 00000000 E     1	    CALL    WriteString
- 0000038A  5A		     1	    POP     EDX
+ 0000039B  52		     1	    PUSH    EDX
+ 0000039C  8B D7	     1	    MOV     EDX, EDI
+ 0000039E  E8 00000000 E     1	    CALL    WriteString
+ 000003A3  5A		     1	    POP     EDX
 
- 0000038B  5F			    POP    EDI
- 0000038C  5A			    POP    EDX
- 0000038D  5B			    POP    EBX
- 0000038E  58			    POP    EAX
- 0000038F  5E			    POP    ESI
- 00000390  5D			    POP    EBP
- 00000391  C2 0010		    RET     16
+ 000003A4  5F			    POP    EDI
+ 000003A5  5A			    POP    EDX
+ 000003A6  5B			    POP    EBX
+ 000003A7  58			    POP    EAX
+ 000003A8  5E			    POP    ESI
+ 000003A9  5D			    POP    EBP
+ 000003AA  C2 0010		    RET     16
 
+ 000003AD			WriteVal    ENDP
 
- 00000394			WriteVal    ENDP
+				; --------------------------------------------------------------------------------------------------
+				; Name: calculateRoundedAverage
+				;
+				; --------------------------------------------------------------------------------------------------
+ 000003AD			calculateRoundedAverage     PROC
+ 000003AD  55			    PUSH    EBP
+ 000003AE  8B EC		    MOV     EBP, ESP
 
- 00000394			calculateRoundedAverage     PROC
- 00000394  55			    PUSH    EBP
- 00000395  8B EC		    MOV     EBP, ESP
-
- 00000397  50			    PUSH    EAX
- 00000398  52			    PUSH    EDX
- 00000399  53			    PUSH    EBX
- 0000039A  56			    PUSH    ESI
- 0000039B  57			    PUSH    EDI
+ 000003B0  50			    PUSH    EAX
+ 000003B1  52			    PUSH    EDX
+ 000003B2  53			    PUSH    EBX
+ 000003B3  56			    PUSH    ESI
+ 000003B4  57			    PUSH    EDI
 
 				    ; [EBP + 8] = roundedAverage SDWORD address
- 0000039C  8B 7D 08		    MOV     EDI, [EBP + 8]
+ 000003B5  8B 7D 08		    MOV     EDI, [EBP + 8]
 
 				    ; [EBP + 12] = totalSum Address, the dividend
- 0000039F  8B 75 0C		    MOV     ESI, [EBP + 12]
- 000003A2  8B 06		    MOV     EAX, [ESI]
+ 000003B8  8B 75 0C		    MOV     ESI, [EBP + 12]
+ 000003BB  8B 06		    MOV     EAX, [ESI]
 
 				    ; Dividend = 10 for 10 total integers
- 000003A4  BB 0000000A		    MOV     EBX, 10
+ 000003BD  BB 0000000A		    MOV     EBX, 10
 
 				    ; Clear EDX
- 000003A9  99			    CDQ
- 000003AA  F7 FB		    IDIV    EBX
+ 000003C2  99			    CDQ
+ 000003C3  F7 FB		    IDIV    EBX
 				    
 				    ; Quotient in EAX
- 000003AC  89 07		    MOV     [EDI], EAX
+ 000003C5  89 07		    MOV     [EDI], EAX
 
- 000003AE  5F			    POP     EDI
- 000003AF  5E			    POP     ESI
- 000003B0  5B			    POP     EBX
- 000003B1  5A			    POP     EDX
- 000003B2  58			    POP     EAX
- 000003B3  5D			    POP     EBP
- 000003B4  C2 0008		    RET     8
+ 000003C7  5F			    POP     EDI
+ 000003C8  5E			    POP     ESI
+ 000003C9  5B			    POP     EBX
+ 000003CA  5A			    POP     EDX
+ 000003CB  58			    POP     EAX
+ 000003CC  5D			    POP     EBP
+ 000003CD  C2 0008		    RET     8
 
 
- 000003B7			calculateRoundedAverage     ENDP
+ 000003D0			calculateRoundedAverage     ENDP
 
 				END main
-Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/05/21 01:35:41
+Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:07:14
 "Project 6     (Proj6_pantojaj.asm			     Symbols 2 - 1
 
 
@@ -1003,8 +1136,8 @@ Segments and Groups:
 
 FLAT . . . . . . . . . . . . . .	GROUP
 STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
-_DATA  . . . . . . . . . . . . .	32 Bit	 00000310 Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 000003B7 Para	  Public  'CODE'	
+_DATA  . . . . . . . . . . . . .	32 Bit	 00000311 Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 000003D0 Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
@@ -1126,14 +1259,14 @@ WriteStackFrameName  . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-WriteVal . . . . . . . . . . . .	P Near	 00000330 _TEXT	Length= 00000064 Public STDCALL
-  _loopPreconditions . . . . . .	L Near	 0000034C _TEXT	
-  _startLoop . . . . . . . . . .	L Near	 00000352 _TEXT	
-  _exitProcedure . . . . . . . .	L Near	 00000378 _TEXT	
+WriteVal . . . . . . . . . . . .	P Near	 0000032B _TEXT	Length= 00000082 Public STDCALL
+  _loopPreconditions . . . . . .	L Near	 00000365 _TEXT	
+  _startLoop . . . . . . . . . .	L Near	 0000036B _TEXT	
+  _exitProcedure . . . . . . . .	L Near	 00000391 _TEXT	
 WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-calculateRoundedAverage  . . . .	P Near	 00000394 _TEXT	Length= 00000023 Public STDCALL
-calculateSum . . . . . . . . . .	P Near	 00000302 _TEXT	Length= 0000002E Public STDCALL
-  _startLoop . . . . . . . . . .	L Near	 0000031A _TEXT	
+calculateRoundedAverage  . . . .	P Near	 000003AD _TEXT	Length= 00000023 Public STDCALL
+calculateSum . . . . . . . . . .	P Near	 00000302 _TEXT	Length= 00000029 Public STDCALL
+  _startLoop . . . . . . . . . .	L Near	 00000315 _TEXT	
 introduction . . . . . . . . . .	P Near	 0000014C _TEXT	Length= 0000002F Public STDCALL
 main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 0000014C Public STDCALL
   _getIntegers . . . . . . . . .	L Near	 00000023 _TEXT	
@@ -1382,6 +1515,7 @@ header4  . . . . . . . . . . . .	Byte	 000000B1 _DATA
 invalidCharAmount2 . . . . . . .	Byte	 00000192 _DATA	
 invalidCharAmount  . . . . . . .	Byte	 0000015D _DATA	
 invalidIntStr  . . . . . . . . .	Byte	 000001C8 _DATA	
+isMinimumSignedWord  . . . . . .	Byte	 000002E4 _DATA	
 isNegativeNum  . . . . . . . . .	DWord	 000002CC _DATA	
 lightBlue  . . . . . . . . . . .	Number	 00000009h   
 lightCyan  . . . . . . . . . . .	Number	 0000000Bh   
@@ -1401,7 +1535,7 @@ sumOfNumbersStr  . . . . . . . .	Byte	 0000022C _DATA
 totalSum . . . . . . . . . . . .	DWord	 000002D0 _DATA	
 userInputNumericVal  . . . . . .	DWord	 000002C8 _DATA	
 userInputString  . . . . . . . .	Byte	 000002BB _DATA	
-userIntegersArray  . . . . . . .	DWord	 000002E4 _DATA	
+userIntegersArray  . . . . . . .	DWord	 000002E5 _DATA	
 white  . . . . . . . . . . . . .	Number	 0000000Fh   
 writevalOutputString . . . . . .	Byte	 000002D4 _DATA	
 wsprintf . . . . . . . . . . . .	Text   	 wsprintfA

@@ -10,7 +10,18 @@ TITLE Project 6     (Proj6_pantojaj.asm)
 
 INCLUDE Irvine32.inc
 
-; (insert macro definitions here)
+; --------------------------------------------------------------------------------------------------
+; Name: mDisplayString
+;
+; Writes a passed string (from address) to terminal.
+;
+; Preconditions: Do not use EDX as arguments
+;
+; Receives:
+;       strAddr = the starting address of the string to output
+; 
+; 
+; --------------------------------------------------------------------------------------------------
 mDisplayString MACRO strAddr
     PUSH    EDX
     MOV     EDX, strAddr
@@ -18,13 +29,32 @@ mDisplayString MACRO strAddr
     POP     EDX
 ENDM
 
+
+; --------------------------------------------------------------------------------------------------
+; Name: mGetString
+;
+; Prompts the user to enter an integer as a string, then reads and saves the input string to memory. Uses Irvine
+; library ReadString 
+;
+; Preconditions: Do not use EDX, ECX, or EDI as arguments
+;
+; Receives:
+;       promptAddr = The address of the string giving instructions to the user to enter a number
+;       inputStringAddr = The address to save the user's input to. 
+;       maxStrLength = an immediate value denoting the max number of bytes to read from the user
+;       charsReadAddr = the address of a data variable to save the number of bytes read from the user's input.
+;
+; --------------------------------------------------------------------------------------------------
 mGetString MACRO promptAddr, inputStringAddr, maxStrLength, charsReadAddr
+    ; Save used registers
     PUSH    EDX
     PUSH    ECX
     PUSH    EDI
     
     ; Prompt user (string)
     mDisplayString promptAddr
+    
+    ; ReadString preconditions
     MOV     ECX, maxStrLength
     MOV     EDX, inputStringAddr
     CALL    ReadString
@@ -36,11 +66,8 @@ mGetString MACRO promptAddr, inputStringAddr, maxStrLength, charsReadAddr
     POP     EDI
     POP     ECX
     POP     EDX
-
-
 ENDM
 
-; (insert constant definitions here)
 MAX_STRING_LENGTH = 13   ; Max # of digits in a 32 bit SWORD integer is 10. 11 accounts for sign, 12 for null terminator. 13 is used for length validation.
 MAX_CHARS_ALLOWED = 11
 PLUS_SIGN_ASCII = 43
@@ -51,7 +78,7 @@ NEGATIVE = 1
 POSITIVE = 0
 
 .data
-    ; Strings
+    ; Output strings
     header1                 BYTE    "PROGRAMMING ASSIGNMENT 6: Designing low-level I/O procedures", 13, 10, 0
     header2                 BYTE    "Written by: Jesse Pantoja", 13, 10, 13, 10, 0
     header3                 BYTE    "Please enter 10 signed decimal integers between -2,147,483,648 and 2,147,483,647.", 13, 10, 0
@@ -79,6 +106,7 @@ POSITIVE = 0
     writevalOutputString    BYTE    11 DUP(0)
     commaCounter            BYTE    0
     roundedAverageInt       SDWORD  ?
+    isMinimumSignedWord     BYTE    0
     
 
     ; Array
@@ -87,16 +115,16 @@ POSITIVE = 0
 .code
 main PROC
 
-; (insert executable instructions here)
+
     PUSH    OFFSET header1
     PUSH    OFFSET header2
     PUSH    OFFSET header3
     PUSH    OFFSET header4
     CALL    introduction
 
+    ; _getIntegers loop preconditions
     MOV     ECX, 10
     MOV     ESI, OFFSET userIntegersArray
-
 _getIntegers:
     ; Call Read Val x10 
     PUSH    OFFSET overflowString
@@ -128,7 +156,7 @@ _getIntegers:
     CALL    CrLf
     mDisplayString OFFSET numbersInputtedStr
 
-    ; Call WriteVal 10 times, each time pushing a value from userIntegersArray. For debugging, only do first val for now
+    ; Call WriteVal 10 times, each time pushing a value from userIntegersArray. 
     ; Reset isNegativeNum to false
     MOV     ESI, OFFSET userIntegersArray
     MOV     ECX, 10
@@ -187,8 +215,19 @@ _writevalLoopInstruction:
     Invoke ExitProcess,0	; exit to operating system
 main ENDP
 
-; (insert additional procedures here)
-
+; --------------------------------------------------------------------------------------------------
+; Name: introduction
+;
+; Outputs program header and instructions for user strings to the terminal. Uses mDisplayString macro
+; to output strings.
+;
+; Receives:
+;    [EBP + 20] = header1 address. Program title string.
+;    [EBP + 16] = header2 address. "Programmed by.." string 
+;    [EBP + 12] = header3 address. String describing what the user should be inputting
+;    [EBP + 8] = header4 address. String describing what the program will output
+;
+; --------------------------------------------------------------------------------------------------
 introduction PROC
     ; Create stack frame
     PUSH    EBP
@@ -203,6 +242,44 @@ introduction PROC
     RET     16
 introduction ENDP
 
+; --------------------------------------------------------------------------------------------------
+; Name: ReadVal
+;
+; Uses mGetString macro to get a single, valid signed number (as a string) from the user. The procedure
+; will continuously ask for input until valid input is entered. Valid input are strings that start with
+; a digit, +, or -; strings that fit inside a 32 bit register; strings with no other characters but
+; digits after the first character; non-empty strings. ReadVal will takes a valid input (as a string) and
+; convert it to an SDWORD integer and outputs that integer into SDWORD userNumericVal.
+; 
+; Postconditions: None. All registers are restored before and after procedure call.
+;
+; Receives:
+;    [EBP + 44] = overflowString. Address of string to output to terminal when user entered a number to big for a 32bit reg.
+;    [EBP + 40] = isNegativeNum boolean address. input/output param to denote if the user's input is a negative number. 
+;    [EBP + 36] = userInputNumericVal data output parameter. When ReadVal converts a valid input to a SDWORD integer,
+;                 it outputs the value at this address. 
+;    [EBP + 32] = invalidIntStr. Address of string to output to terminal when user did not enter a signed number.
+;    [EBP + 28] = invalidCharAmount2. Address of string to output to terminal when inputted string is empty.
+;    [EBP + 24] = invalidCharAmount. Address of string to output to terminal when inputted string has too many characters.
+;    [EBP + 20] = numCharsInputted data address as output param. Used as arg for mGetString and later for string validation. 
+;                 numCharsInputted value is the integer number of characters inputted by the user.
+;    [EBP + 16] = MAX_STRING_LENGTH immediate value. Used as mGetString argument and for string validation.
+;    [EBP + 12] = userInputString data output address. mGetString receives this address to write the user's string input at said address.
+;    [EBP + 8] = promptUser string address. String outputted to prompt user to enter a signed number.
+;    MAX_CHARS_ALLOWED, ZERO_ASCII, NINE_ASCII, PLUS_SIGN_ASCII, MINUS_SIGN_ASCII, POSITIVE are global constants.
+;
+;   Returns:
+;       userInputString: Data variable always modified for every call to ReadVal. Used as an input/output parameter
+;                       to save the user's inputted string as an array of bytes. Every call to ReadVal overwrites previous strings in the variable, if any. 
+;       numCharsInputted: Data variable always modified for every call to ReadVal. Used as an input/output parameter
+;                         to save the number of characters the user inputted when mGetString macro is invoked within procedure.
+;                         Every call to ReadVal overwrites previous value, if any. 
+;       userInputNumericVal: ReadVal's primary output. This variable will hold the integer SDWORD type after ReadVal
+;                           converts the user's string to integer. 
+;       isNegativeNum: May be modified in a ReadVal call, but is always restored before procedure returns. 
+;
+;
+; --------------------------------------------------------------------------------------------------
 ReadVal PROC
     PUSH    EBP
     MOV     EBP, ESP
@@ -215,7 +292,6 @@ ReadVal PROC
     PUSH    ESI
     
 _getString:
-    ; Args: promptUser addr, userInputStringAddr addr, MAX_STRING_LENGTH val, numCharsInputted addr
     ; Reset isNegativeNum variable to positive
     MOV     EDI, [EBP + 40]
     MOV     EBX, 0
@@ -225,6 +301,7 @@ _getString:
     MOV     EBX, 0
     MOV     [EDI], EBX
 
+    ; Args: promptUser addr, userInputStringAddr addr, MAX_STRING_LENGTH val, numCharsInputted addr
     mGetString [EBP + 8], [EBP + 12], [EBP + 16], [EBP + 20]
 
     ; First check if user input string exceeds MAX_CHARS_ALLOWED
@@ -232,7 +309,7 @@ _getString:
     MOV     ESI, [EBP + 20]
     MOV     EBX, [ESI]
     CMP     EBX, MAX_CHARS_ALLOWED
-    ; If numCharsInputted < 11, jump to next check, else display error and jump back to mGetString
+    ; If numCharsInputted < 11, jump to next check, else display error and ask for another input.
     JLE     _checkForNullString
     mDisplayString [EBP + 24]
     JMP     _getString
@@ -244,30 +321,30 @@ _checkForNullString:
     mDisplayString [EBP + 28]
     JMP     _getString
  
-    ; Check that first character is a +, -, or digit character
+    ; Check that first character is valid. I.e. a +, -, or digit character. Use LODSB from beginning of string
 _checkForValidFirstChar:
     CLD
     ; Change ESI from num of chars inputted to inputStringAddress 
-    MOV ESI, [EBP + 12]
+    MOV     ESI, [EBP + 12]
     ; Copy first char of userInput into AL
     LODSB
 
-    ; AL must be 43 OR 45 OR (48 <= AL <= 57)
-    CMP AL, PLUS_SIGN_ASCII
-    ; Check that theres more than 1 char before confirming valid input
-    JE  _checkMoreThanOneChar
+    ; AL byte value must be ASCIIs 43 OR 45 OR (48 <= AL <= 57)
+    CMP     AL, PLUS_SIGN_ASCII
+    ; If first char is plus sign, check that theres more than 1 char before confirming valid input
+    JE      _checkMoreThanOneChar
 
-    CMP AL, MINUS_SIGN_ASCII
-    ; Check that theres more than 1 char before confirming valid input
-    JE  _checkMoreThanOneChar
+    CMP     AL, MINUS_SIGN_ASCII
+    ; If first char is minus sign, check that theres more than 1 char before confirming valid input
+    JE      _checkMoreThanOneChar
 
-    ; If AL val < 48 (0), first char must be invalid, else check if val > 57 (9)
-    CMP AL, ZERO_ASCII
-    JL  _stringInvalid
+    ; If AL val < 48 (ASCII for 0), first char must be invalid, else check if val > 57 (ASCII for 9)
+    CMP     AL, ZERO_ASCII
+    JL      _stringInvalid
 
-    ; If AL val <= NINE_ASCII, then first char at this point is valid
-    CMP AL, NINE_ASCII
-    JLE _firstCharValid
+    ; If AL val <= NINE_ASCII, then first char must be valid at this point
+    CMP     AL, NINE_ASCII
+    JLE     _firstCharValid
 
     ; Output error string and ask for input again
 _stringInvalid:
@@ -279,52 +356,61 @@ _checkMoreThanOneChar:
     ; [EBP + 20] = numCharsInputted Address
     MOV     ECX, [EBP + 20]
     MOV     EBX, [ECX]
-    ; If numCharsInputted value = 1, first char is valid but no valid number was inputted. Else, input is valid.
+    ; If numCharsInputted value = 1 and char is + or -, first char is valid but no valid number was inputted. Else, input is valid.
     CMP     EBX, 1
     JE      _stringInvalid
    
+   ; First character is valid and/or there is more than one character.
 _firstCharValid:
-    ; Check current val in AL (first val). 
+    ; Assess first character outside of loop. 
+    ; If plus sign or minus sign, we don't have to convert to its SDWORD value. Go to next character
     CMP     AL, PLUS_SIGN_ASCII
     JE      _loopPreconditions
 
+    ; If first char is a minus sign, then set isNegativeNum. 
     CMP     AL, MINUS_SIGN_ASCII
+    ; Else, first character is a digit, process this number outside of loop.
     JNE      _firstCharIsDigit
-    ; First char is a minus sign, set isNegativeNum to 1
+
     PUSH    ESI
     PUSH    EDI
     ; [EBP + 40] = isNegativeNum variable address
     MOV     EDI, [EBP + 40]
     MOV     ESI, 1
-    ; Set isNegativeNum = 1 because first character is a negative sign
+    ; Set isNegativeNum = 1
     MOV     [EDI], ESI
     POP     EDI
     POP     ESI
     JMP     _loopPreconditions
 
   ; Else, first char is a digit. Need to take it into account outside of loop for conversion to an int
-  ; Since userInputNumericVal starts up building from 0, the variable will always be set = first digit val (10* 0 + (ascii code - 48))
+  ; Since userInputNumericVal starts up building from 0, the variable will always be set equal to whatever the first digit is. (10* 0 + (ascii code - 48))
 _firstCharIsDigit:
     PUSH    ESI
     ;[EBP + 36] = userInputNumericVal address, save address in ESI
     MOV     ESI, [EBP + 36]
+    ; Convert from ASCII to integer
     SUB     AL, 48
     MOV     [ESI], EAX
     POP     ESI
 
+    ; Set loop counters based on the number of characters inputted.
 _loopPreconditions:
     PUSH    ESI
     ; [EBP + 20] = numCharsInputted Data address
     MOV     ESI, [EBP + 20]
     MOV     ECX, [ESI]
-    ; ECX should equal numCharsInputted - 1 as first character already accounted for
+    ; ECX should always start off at numCharsInputted - 1 as first character already accounted for above.
     DEC     ECX
     MOV     EBX, [ESI]
-    ; If numCharsInputted >= 10, we will need to stop at second to last digit to determine if final number fits in 32 bit reg
-    ; First restore ESI (pointing to the next character to evaluate in user string) as we no longer need numCharsInputted
+    ; Restore ESI (to point to the next character to evaluate in user string). No longer need numCharsInputted
     POP     ESI
+
+    ; If EBX holds the numCharsInputted value. If numCharsInputted = 1, then skip loop as integer is single digit.
     CMP     EBX, 1
     JE      _skipLoop
+    
+    ; If numCharsInputted >= 10, loop to second to last character digit to determine if final digit will fit in a 32 bit reg
     CMP     EBX, 10
     JL      _startLoop
     ; Loop up to second to last digit 
@@ -360,7 +446,7 @@ _startLoop:
     ; Current character's ASCII code - 48. Restore EAX first
     POP     EAX
     SUB     AL, 48
-    ; Final result in EBX, save this new value in userNumericVal
+    ; Final result in EBX, output this value in userNumericVal
     ADD     EBX, EAX
     MOV     [ESI], EBX
     POP     EBX
@@ -369,18 +455,20 @@ _startLoop:
 
     LOOP    _startLoop
 
+    ; Jumped to here when numCharsInputted is 1.
 _skipLoop:
-    ; DETERMINE IF RUNNING VALUE NEEDS TO BE NEGATED
-    ; PUSH    EBX unecessary because old ebx value is numCharsinputted, useless
+    ; userNumericVal always first computed as positive value. Convert to negative integer if user inputted negative value here
     PUSH    ESI
     ; [EBP + 40] = isNegativeNum address
     MOV     ESI, [EBP + 40]
     MOV     EBX, [ESI]
     ; Restore ESI, as we've obtained isNegativeNum value already
     POP     ESI
+    
+    ; If isNegativeNum is negative, negate userNumericVal. Else skip negating
     CMP     EBX, POSITIVE
     JE      _skipNegating
-    ; Negate running value
+    ; Negate running value in userNumericVal
     PUSH    EDI
     ; Move userNumericVal address into EDI
     MOV     EDI, [EBP + 36]
@@ -392,12 +480,8 @@ _skipLoop:
     POP     EDI
 
 _skipNegating:
-    ; Restore EBX here from its push after loop end
-    ; POP     EBX from line 352 push
-
     ; Next compare numOfCharsInputted by user >= 10 to check if final value fits in 32 bit reg.
-    ; Skip and exit procedure if not. 
-    ; PUSH    EBX unecessary push
+    ; Skip and exit procedure if < 10
     PUSH    ESI
     ; [EBP + 20] = numOfCharsInputted
     MOV     ESI, [EBP + 20]
@@ -409,7 +493,7 @@ _skipNegating:
     JL      _exitProcedure
     ; Else compute last digit on its own. 
     LODSB
-    ; precondition to first check that current char is a digit. Break out and display error if not. 
+    ; Precondition to first check that last char is a digit. Break out and display error if not. 
     ; If AL val < 48 (0), current char is invalid, else check if val > 57 (9)
     CMP AL, ZERO_ASCII
     JL  _stringInvalid
@@ -432,7 +516,7 @@ _skipNegating:
     MOV     EAX, 10
     ; Result in EAX
     IMUL     EDI
-    ; Jump to stringInvalid if 10*userNumericVal triggers overflow
+    ; If overflow flag is set, then number is too big for 32 bit. Ask for another number.
     JO      _overflowAtMultiplication
 
     ; Else Save 10*userNumericVal from EAX to EBX
@@ -451,27 +535,28 @@ _skipNegating:
     JE      _skipNegatingLastDigit
     NEG     EAX
 
-    ; Final result in EBX, save this new value in userNumericVal
 _skipNegatingLastDigit:
-    ; Restore registers from block starting line 351
+    ; Restore registers from line 527
     POP     EDI
     POP     ESI
 
+    ; Last multiplication operation result was saved in EBX. 
     ADD     EBX, EAX
-    ; Jump to stringInvalid if (10*userNumericVal) + integer triggers overflow
+    ; If addition step triggers overflow flag, number is too big to fit in 32 bit reg. Ask for new input.
     JO      _overflowAtAddition
+    ; Else save final value in userNumericVal
     MOV     [ESI], EBX
     POP     EBX
     POP     EDI
     POP     ESI
 
 _exitProcedure: 
-    ; Reset isNegativeNum to 0, it's original parameter value
+    ; Reset isNegativeNum to 0, it's original parameter value before procedure exit.
     MOV     ESI, [EBP + 40]
     MOV     EBX, 0
     MOV     [ESI], EBX
 
-    ; Clean up stack
+    ; Clean up stack from inital registers saved at start of procedure.
     POP     ESI
     POP     EDX
     POP     ECX
@@ -481,7 +566,7 @@ _exitProcedure:
     RET     36
 
 _overflowAtMultiplication:
-    ; Realign stack
+    ; Realign stack before asking for a new input.
     POP     EAX
     POP     EBX
     POP     EDI
@@ -490,7 +575,7 @@ _overflowAtMultiplication:
     JMP     _getString
 
 _overflowAtAddition:
-    ; Realign stack
+    ; Realign stack before asking for a new input.
     POP     EBX
     POP     EDI
     POP     ESI
@@ -500,18 +585,31 @@ _overflowAtAddition:
 ReadVal ENDP
 
 
+; --------------------------------------------------------------------------------------------------
+; Name: calculateSum
+; 
+; Calculates the total sum of the values in userIntegersArray. 
+;
+; Preconditions: Requires that userIntegersArray is filled with 10 integers by calling ReadVal multiple times.
+;
+; Receives:
+;       [EBP + 12] = totalSum data adress. Used as an input/output parameter to store the total sum of the integers in userIntegersArray
+;       [EBP + 8] = userIntegersArray address. Used as an input parameter to extract the values in the array to calculate the sum.
+;
+; Returns:
+;       totalSum: upon procedure return, the total sum of the values in the userIntegersArray is stored in this variable.
+;
+; --------------------------------------------------------------------------------------------------
 calculateSum    PROC
     PUSH    EBP
     MOV     EBP, ESP
 
+    ; Save used registers
     PUSH    ESI
     PUSH    EDI
     PUSH    ECX
     PUSH    EBX
     PUSH    EAX
-
-    ; Loop through every integer (x10) in array
-    MOV     ECX, 10
 
     ; LOOP PRECONDITIONS
     ; Move array address into ESI (array address at [EBP + 8]
@@ -535,47 +633,79 @@ _startLoop:
        
     LOOP _startLoop
 
+    ; Restore registers before procedure return
     POP     EAX
     POP     EBX
     POP     ECX
     POP     EDI
     POP     ESI
     POP     EBP
-
     RET     8
 
 calculateSum    ENDP
 
+; --------------------------------------------------------------------------------------------------
+; Name: WriteVal
+;
+; --------------------------------------------------------------------------------------------------
 WriteVal    PROC
     PUSH    EBP
     MOV     EBP, ESP
 
+    ; Save used registers
     PUSH    ESI
     PUSH    EAX
     PUSH    EBX
     PUSH    EDX
     PUSH    EDI
 
-    ; Determine if passed integer to convert [EBP + 8] is negative
-    ; EAX becomes dividend at this line
-    MOV     EAX, [EBP + 8]
+    ; Determine if passed integer (immediate) [EBP + 8] to convert to string is negative. If negative, convert to positive for easier processing
+    MOV     EAX, [EBP + 8]      ; EAX contains starting dividend for loop at this line
     CMP     EAX, 0
     JNS     _loopPreconditions
     ; Convert to positive number and set isNegativeNum to true (1)
     NEG     EAX
+    ; Set isNegativeNum to 1
     MOV     ESI, [EBP + 16]
     MOV     EBX, 1
     MOV     [ESI], EBX
     ; ESI and EBX register current values not needed after here. 
-    
-_loopPreconditions:
-    ; Point EDI to second to last element in userInputStringVal. Last BYTE will always be numm term 0. Loop will insert bytes in reverse starting at 10th element
+
+    ; Also check if passed integer is minimum value in 32 bit register (-2,147,483,648) edge case (negating will cause overflow only for this input)
+    JNO     _loopPreconditions
+    ; Address edge case by processing last digit individually, outside of loop. 
+    ; INC EAX to -2147483647 so we can negate without an overflow
+    INC     EAX
+    NEG     EAX
+
     MOV     EDI, [EBP + 12]
     ADD     EDI, 9
+
+    ; Clear EDX
+    CDQ
+    ; Divisor always 10
+    MOV     EBX, 10
+    IDIV    EBX
+
+    ; Remainder in EDX, = the furthest right digit from dividend
+    ; Convert value in remainder to its corresponding ASCII code. +49 for this case because we want original number 8 not 7.
+    ADD     EDX, 49
+
+    PUSH    EAX
+    MOV     EAX, EDX
+    STD
+    STOSB
+    POP     EAX
+    ; Skip non-edge case loopPreconditions, as preconditions already established at beginning of edge case block above
+    JMP     _startLoop
+    
+_loopPreconditions:
+    ; Point EDI to second to last element in userInputStringVal. Last BYTE will always be null term 0. Loop will insert bytes in reverse starting at 10th element
+    MOV     EDI, [EBP + 12]
+    ADD     EDI, 9
+
     ; Use post-test loop to sequentially divide integer. Append ASCII codes to output string in REVERSE. 
 _startLoop:
-    ; isNegativeNum stays = 0, positive dividend in EAX
-
     ; Clear EDX
     CDQ
     ; Divisor always 10
@@ -592,11 +722,11 @@ _startLoop:
     STOSB
     POP     EAX
 
-     ; Post test will CMP EAX, 0 after dividing. If quotient (EAX) = 0, then we've reached the last digit
+     ; Post test will CMP EAX, 0 after dividing. If quotient (EAX) = 0, then we've processed the last digit and done
     CMP     EAX, 0
     JNZ     _startLoop
 
-    ; At end of loop, need to check isNegativeNum variable. If negative, we need to add final MINUS SIGN ascii to beginning
+    ; At end of loop, need to check isNegativeNum variable. If negative, we need to add final MINUS SIGN ascii to beginning of string
     MOV     ESI, [EBP + 16]
     MOV     EBX, [ESI]
     CMP     EBX, POSITIVE
@@ -610,7 +740,7 @@ _exitProcedure:
     MOV     EBX, 0
     MOV     [ESI], EBX
 
-    ; Increment EDI pointer by 1 byte to point to first ASCII character
+    ; Increment EDI pointer by 1 byte to point to first ASCII character, as last STOSB decremented EDI. 
     ADD     EDI, 1
 
     ; EDI holds address of first address 
@@ -624,9 +754,12 @@ _exitProcedure:
     POP    EBP
     RET     16
 
-
 WriteVal    ENDP
 
+; --------------------------------------------------------------------------------------------------
+; Name: calculateRoundedAverage
+;
+; --------------------------------------------------------------------------------------------------
 calculateRoundedAverage     PROC
     PUSH    EBP
     MOV     EBP, ESP
