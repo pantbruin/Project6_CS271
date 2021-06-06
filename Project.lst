@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:07:14
+Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:48:31
 "Project 6     (Proj6_pantojaj.asm			     Page 1 - 1
 
 
@@ -261,11 +261,10 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:07:14
 	   ]
  000002DF 00			    commaCounter            BYTE    0
  000002E0 00000000		    roundedAverageInt       SDWORD  ?
- 000002E4 00			    isMinimumSignedWord     BYTE    0
 				    
 
 				    ; Array
- 000002E5  0000000B [		    userIntegersArray       SDWORD  11 DUP(?)
+ 000002E4  0000000B [		    userIntegersArray       SDWORD  11 DUP(?)
 	    00000000
 	   ]
 
@@ -279,9 +278,16 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:07:14
  0000000F  68 000000B1 R	    PUSH    OFFSET header4
  00000014  E8 00000133		    CALL    introduction
 
+
+				; -----------------------------------------------------------
+				; Calls ReadVal ten times. Each call to ReadVal asks for string input
+				; from the user and returns an integer in userNumericVal. Once procedure returns,
+				; the value returned is appended to userIntegersArray.
+				;
+				; -----------------------------------------------------------
 				    ; _getIntegers loop preconditions
  00000019  B9 0000000A		    MOV     ECX, 10
- 0000001E  BE 000002E5 R	    MOV     ESI, OFFSET userIntegersArray
+ 0000001E  BE 000002E4 R	    MOV     ESI, OFFSET userIntegersArray
  00000023			_getIntegers:
 				    ; Call Read Val x10 
  00000023  68 0000027A R	    PUSH    OFFSET overflowString
@@ -303,10 +309,22 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:07:14
 				    
  00000062  E2 BF		    LOOP    _getIntegers
 
+				; -----------------------------------------------------------
+				;  Calculate the sum of the 10 saved values in userIntegersArray
+				; (saved in totalSum)
+				; -----------------------------------------------------------
+
 				    ; Calculate sum of the obtained integers in array
  00000064  68 000002D0 R	    PUSH    OFFSET totalSum
- 00000069  68 000002E5 R	    PUSH    OFFSET userIntegersArray
+ 00000069  68 000002E4 R	    PUSH    OFFSET userIntegersArray
  0000006E  E8 0000028F		    CALL    calculateSum
+
+				; -----------------------------------------------------------
+				; Output to the terminal each SDWORD integer in userIntegersArray
+				; to its string form using WriteVal. Because there are 10 integers in the array,
+				; call WriteVal 10 times.
+				;
+				; -----------------------------------------------------------
 
 				    ; Display "You entered following numbers:" string
  00000073  E8 00000000 E	    CALL    CrLf
@@ -319,7 +337,7 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:07:14
 
 				    ; Call WriteVal 10 times, each time pushing a value from userIntegersArray. 
 				    ; Reset isNegativeNum to false
- 00000089  BE 000002E5 R	    MOV     ESI, OFFSET userIntegersArray
+ 00000089  BE 000002E4 R	    MOV     ESI, OFFSET userIntegersArray
  0000008E  B9 0000000A		    MOV     ECX, 10
 
  00000093			_displayIntsAsStrings:
@@ -343,6 +361,13 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:07:14
  000000C4			_writevalLoopInstruction:
  000000C4  E2 CD		    LOOP    _displayIntsAsStrings
 
+				; -----------------------------------------------------------
+				; Using WriteVal, output the totalSum SDWORD integer value in its string
+				; representation obtained; by calling calculateSum above. Then calculate 
+				; the rouned average and output that SDWORD integer value in its string representation
+				; using WriteVal as well.
+				;
+				; -----------------------------------------------------------
 
 				    ; Output sum strings
  000000C6  E8 00000000 E	    CALL    CrLf
@@ -378,6 +403,11 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:07:14
  0000011F  68 000002D4 R	    PUSH    OFFSET writevalOutputString
  00000124  FF 35 000002E0 R	    PUSH    roundedAverageInt
  0000012A  E8 000001FC		    CALL    WriteVal
+
+				; -----------------------------------------------------------
+				; Display a farewell message.
+				;
+				; -----------------------------------------------------------
 
 				    ; Display farewell
  0000012F  E8 00000000 E	    CALL    CrLf
@@ -878,6 +908,25 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:07:14
 				; --------------------------------------------------------------------------------------------------
 				; Name: WriteVal
 				;
+				; WriteVal takes an immediate integer value as a parameter, converts that value into its string representation,
+				; and outputs that string representation to the terminal. The procedure breaks down the integer value starting
+				; from the ones place and moves left to higher powers. Thus, the string representation is written in reverse into
+				; the output (writevalOutputString). 
+				;
+				; Preconditions: writevalOutputString should be initially declared in the data section as an 11 element byte array filled with 0's
+				;
+				;
+				; Receives:
+				;       [EBP + 20] =  SIZEOF writevalOutputString. 
+				;       [EBP + 16] = isNegativeNum address. Used as a boolean to track if the passed value to convert is negative
+				;       [EBP + 12] = writevalOutputString address. Output parameter where the final string representation
+				;                   of the integer to be converted will be stored.
+				;       [EBP + 8] = an immediate SDWORD value to convert to its string representation
+				;       MINUS_SIGN_ASCII and POSITIVE, global constants
+				;
+				; Returns:
+				;       writevalOutputString: modified and not restored. Towards end of the procedure, mDisplayString is used
+				;       to display the string that WriteVal outputted to writevalOutputString. Upon procedure return, writevalOutputString is not restored.
 				; --------------------------------------------------------------------------------------------------
  0000032B			WriteVal    PROC
  0000032B  55			    PUSH    EBP
@@ -909,6 +958,7 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:07:14
  00000349  40			    INC     EAX
  0000034A  F7 D8		    NEG     EAX
 
+				    ; Point EDI to second to last element in userInputStringVal. Last BYTE will always be null term 0. Loop will insert bytes in reverse starting at 10th element
  0000034C  8B 7D 0C		    MOV     EDI, [EBP + 12]
  0000034F  83 C7 09		    ADD     EDI, 9
 
@@ -994,6 +1044,17 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:07:14
 				; --------------------------------------------------------------------------------------------------
 				; Name: calculateRoundedAverage
 				;
+				; Calculates the rounded average of the integers obtained from ReadVal being called 10 times.
+				;
+				; Preconditions: Requires that totalSum be calculated already. 
+				; 
+				; Receives:
+				;       [EBP + 12] = totalSum data address. Used as input to calculate rounded average.
+				;       [EBP + 8] = roundedAverageInt output parameter address. 
+				;
+				; Returns:
+				;       roundedAverageInt: the calculated rounded average is stored in this variable.
+				;
 				; --------------------------------------------------------------------------------------------------
  000003AD			calculateRoundedAverage     PROC
  000003AD  55			    PUSH    EBP
@@ -1019,9 +1080,10 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:07:14
  000003C2  99			    CDQ
  000003C3  F7 FB		    IDIV    EBX
 				    
-				    ; Quotient in EAX
+				    ; Quotient in EAX. Save result in roundedAverage variable
  000003C5  89 07		    MOV     [EDI], EAX
 
+				    ; Restore registers
  000003C7  5F			    POP     EDI
  000003C8  5E			    POP     ESI
  000003C9  5B			    POP     EBX
@@ -1030,11 +1092,10 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:07:14
  000003CC  5D			    POP     EBP
  000003CD  C2 0008		    RET     8
 
-
  000003D0			calculateRoundedAverage     ENDP
 
 				END main
-Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:07:14
+Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:48:31
 "Project 6     (Proj6_pantojaj.asm			     Symbols 2 - 1
 
 
@@ -1136,7 +1197,7 @@ Segments and Groups:
 
 FLAT . . . . . . . . . . . . . .	GROUP
 STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
-_DATA  . . . . . . . . . . . . .	32 Bit	 00000311 Para	  Public  'DATA'	
+_DATA  . . . . . . . . . . . . .	32 Bit	 00000310 Para	  Public  'DATA'	
 _TEXT  . . . . . . . . . . . . .	32 Bit	 000003D0 Para	  Public  'CODE'	
 
 
@@ -1515,7 +1576,6 @@ header4  . . . . . . . . . . . .	Byte	 000000B1 _DATA
 invalidCharAmount2 . . . . . . .	Byte	 00000192 _DATA	
 invalidCharAmount  . . . . . . .	Byte	 0000015D _DATA	
 invalidIntStr  . . . . . . . . .	Byte	 000001C8 _DATA	
-isMinimumSignedWord  . . . . . .	Byte	 000002E4 _DATA	
 isNegativeNum  . . . . . . . . .	DWord	 000002CC _DATA	
 lightBlue  . . . . . . . . . . .	Number	 00000009h   
 lightCyan  . . . . . . . . . . .	Number	 0000000Bh   
@@ -1535,7 +1595,7 @@ sumOfNumbersStr  . . . . . . . .	Byte	 0000022C _DATA
 totalSum . . . . . . . . . . . .	DWord	 000002D0 _DATA	
 userInputNumericVal  . . . . . .	DWord	 000002C8 _DATA	
 userInputString  . . . . . . . .	Byte	 000002BB _DATA	
-userIntegersArray  . . . . . . .	DWord	 000002E5 _DATA	
+userIntegersArray  . . . . . . .	DWord	 000002E4 _DATA	
 white  . . . . . . . . . . . . .	Number	 0000000Fh   
 writevalOutputString . . . . . .	Byte	 000002D4 _DATA	
 wsprintf . . . . . . . . . . . .	Text   	 wsprintfA

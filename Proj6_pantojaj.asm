@@ -1,12 +1,14 @@
 TITLE Project 6     (Proj6_pantojaj.asm)
 
 ; Author: Jesse Pantoja 
-; Last Modified: 
+; Last Modified: 6/6/2021
 ; OSU email address: pantojaj@oregonstate.edu
 ; Course number/section:   CS271 Section 400
 ; Project Number:  6               Due Date: 6/6/2021
-; Description: This file is provided as a template from which you may work
-;              when developing assembly projects in CS271.
+; Description: Includes a program that asks the user for 10 signed numbers that can fit inside a 32 bit register as strings. 
+; The program then converts the strings to their integer SDWORD data type form, stores them, calculates the sum, and rounded
+; average. The program then converts the SDWORD data type integers, sum, and rounded average to strings. Finally,
+; a list of the numbers the user entered, the sum of those numbers, and their rounded average are outputted as strings.
 
 INCLUDE Irvine32.inc
 
@@ -19,7 +21,6 @@ INCLUDE Irvine32.inc
 ;
 ; Receives:
 ;       strAddr = the starting address of the string to output
-; 
 ; 
 ; --------------------------------------------------------------------------------------------------
 mDisplayString MACRO strAddr
@@ -95,8 +96,6 @@ POSITIVE = 0
     farewellStr             BYTE    "Thanks for playing!", 0
     overflowString          BYTE    "The number you entered is too large for a 32 bit register.", 13, 10, 0
 
-    
-
     ; Data
     numCharsInputted        DWORD   ?
     userInputString         BYTE    MAX_STRING_LENGTH DUP(?)
@@ -106,7 +105,6 @@ POSITIVE = 0
     writevalOutputString    BYTE    11 DUP(0)
     commaCounter            BYTE    0
     roundedAverageInt       SDWORD  ?
-    
 
     ; Array
     userIntegersArray       SDWORD  11 DUP(?)
@@ -114,13 +112,11 @@ POSITIVE = 0
 .code
 main PROC
 
-
     PUSH    OFFSET header1
     PUSH    OFFSET header2
     PUSH    OFFSET header3
     PUSH    OFFSET header4
     CALL    introduction
-
 
 ; -----------------------------------------------------------
 ; Calls ReadVal ten times. Each call to ReadVal asks for string input
@@ -239,8 +235,6 @@ _writevalLoopInstruction:
     CALL    CrLf
     CALL    CrLf
     mDisplayString OFFSET farewellStr
-
-
 
     Invoke ExitProcess,0	; exit to operating system
 main ENDP
@@ -613,7 +607,6 @@ _overflowAtAddition:
     JMP     _getString
 
 ReadVal ENDP
-
 
 ; --------------------------------------------------------------------------------------------------
 ; Name: calculateSum
