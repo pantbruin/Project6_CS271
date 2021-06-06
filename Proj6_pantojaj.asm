@@ -120,6 +120,12 @@ POSITIVE = 0
 .code
 main PROC
 
+; -----------------------------------------------------------
+; Use introduction procedure to output program headers and instructions
+; to the terminal.
+;
+; -----------------------------------------------------------
+
     PUSH    OFFSET header1
     PUSH    OFFSET header2
     PUSH    OFFSET header3
@@ -201,17 +207,18 @@ _writevalLoopInstruction:
 
 ; -----------------------------------------------------------
 ; Using WriteVal, output the totalSum SDWORD integer value in its string
-; representation obtained; by calling calculateSum above. Then calculate 
+; representation obtained by calling calculateSum above. Then calculate 
 ; the rouned average and output that SDWORD integer value in its string representation
 ; using WriteVal as well.
 ;
 ; -----------------------------------------------------------
 
-    ; Output sum strings
+    ; Output sum string "The total sum..."
     CALL    CrLf
     CALL    CrLf
     mDisplayString OFFSET sumOfNumbersStr
 
+    ; Call WriteVal to display totalSum integer in its string form to terminal
     PUSH    SIZEOF writevalOutputString
     PUSH    OFFSET isNegativeNum
     PUSH    OFFSET writevalOutputString
@@ -223,11 +230,12 @@ _writevalLoopInstruction:
     PUSH    OFFSET roundedAverageInt
     CALL    calculateRoundedAverage
 
-    ; Display rounded average
+    ; Display rounded average string "The rounded average is: "
     CALL    CrLf
     CALL    CrLf
     mDisplayString OFFSET roundedAverageStr
     
+    ; Call WriteVal to display roundedAverage integer in its string form to terminal
     PUSH    SIZEOF writevalOutputString
     PUSH    OFFSET isNegativeNum
     PUSH    OFFSET writevalOutputString

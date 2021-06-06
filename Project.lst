@@ -1,16 +1,18 @@
-Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:48:31
+Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 14:08:23
 "Project 6     (Proj6_pantojaj.asm			     Page 1 - 1
 
 
 				TITLE Project 6     (Proj6_pantojaj.asm)
 
 				; Author: Jesse Pantoja 
-				; Last Modified: 
+				; Last Modified: 6/6/2021
 				; OSU email address: pantojaj@oregonstate.edu
 				; Course number/section:   CS271 Section 400
 				; Project Number:  6               Due Date: 6/6/2021
-				; Description: This file is provided as a template from which you may work
-				;              when developing assembly projects in CS271.
+				; Description: Includes a program that asks the user for 10 signed numbers (that can fit inside a 32 bit register) as strings. 
+				; The program then converts the strings to their integer SDWORD data type form, stores them, calculates the sum, and rounded
+				; average. The program then converts the SDWORD data type integers, sum, and rounded average to strings. Finally,
+				; a list of the numbers the user entered, the sum of those numbers, and their rounded average are outputted as strings.
 
 				INCLUDE Irvine32.inc
 			      C ; Include file for Irvine32.lib             (Irvine32.inc)
@@ -40,7 +42,9 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:48:31
 				;
 				; Receives:
 				;       strAddr = the starting address of the string to output
-				; 
+				;
+				; Returns:
+				;       The string at strAddr as output to the terminal.
 				; 
 				; --------------------------------------------------------------------------------------------------
 				mDisplayString MACRO strAddr
@@ -54,7 +58,7 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:48:31
 				; --------------------------------------------------------------------------------------------------
 				; Name: mGetString
 				;
-				; Prompts the user to enter an integer as a string, then reads and saves the input string to memory. Uses Irvine
+				; Prompts the user to enter an integer as a string using mDisplayString, then reads and saves the input string to memory. Uses Irvine
 				; library ReadString 
 				;
 				; Preconditions: Do not use EDX, ECX, or EDI as arguments
@@ -64,6 +68,11 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:48:31
 				;       inputStringAddr = The address to save the user's input to. 
 				;       maxStrLength = an immediate value denoting the max number of bytes to read from the user
 				;       charsReadAddr = the address of a data variable to save the number of bytes read from the user's input.
+				;
+				; Returns:
+				;       charsReadAddr: saves the number of bytes read from the user's inpt into the data variable address at
+				;       charsReadAddr
+				;
 				;
 				; --------------------------------------------------------------------------------------------------
 				mGetString MACRO promptAddr, inputStringAddr, maxStrLength, charsReadAddr
@@ -246,8 +255,6 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:48:31
 	   65 72 2E 0D 0A
 	   00
 
-				    
-
 				    ; Data
  000002B7 00000000		    numCharsInputted        DWORD   ?
  000002BB  0000000D [		    userInputString         BYTE    MAX_STRING_LENGTH DUP(?)
@@ -261,7 +268,6 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:48:31
 	   ]
  000002DF 00			    commaCounter            BYTE    0
  000002E0 00000000		    roundedAverageInt       SDWORD  ?
-				    
 
 				    ; Array
  000002E4  0000000B [		    userIntegersArray       SDWORD  11 DUP(?)
@@ -271,13 +277,11 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:48:31
  00000000			.code
  00000000			main PROC
 
-
  00000000  68 00000000 R	    PUSH    OFFSET header1
  00000005  68 0000003F R	    PUSH    OFFSET header2
  0000000A  68 0000005D R	    PUSH    OFFSET header3
  0000000F  68 000000B1 R	    PUSH    OFFSET header4
  00000014  E8 00000133		    CALL    introduction
-
 
 				; -----------------------------------------------------------
 				; Calls ReadVal ten times. Each call to ReadVal asks for string input
@@ -418,8 +422,6 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:48:31
  0000013F  E8 00000000 E     1	    CALL    WriteString
  00000144  5A		     1	    POP     EDX
 
-
-
 				    Invoke ExitProcess,0	; exit to operating system
  00000145  6A 00	   *	    push   +000000000h
  00000147  E8 00000000 E   *	    call   ExitProcess
@@ -432,10 +434,13 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:48:31
 				; to output strings.
 				;
 				; Receives:
-				;    [EBP + 20] = header1 address. Program title string.
-				;    [EBP + 16] = header2 address. "Programmed by.." string 
-				;    [EBP + 12] = header3 address. String describing what the user should be inputting
-				;    [EBP + 8] = header4 address. String describing what the program will output
+				;       [EBP + 20] = header1 address. Program title string.
+				;       [EBP + 16] = header2 address. "Programmed by.." string 
+				;       [EBP + 12] = header3 address. String describing what the user should be inputting
+				;       [EBP + 8] = header4 address. String describing what the program will output
+				;
+				; Returns:
+				;       Four string outputs to the terminal.
 				;
 				; --------------------------------------------------------------------------------------------------
  0000014C			introduction PROC
@@ -502,7 +507,9 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:48:31
 				;                         Every call to ReadVal overwrites previous value, if any. 
 				;       userInputNumericVal: ReadVal's primary output. This variable will hold the integer SDWORD type after ReadVal
 				;                           converts the user's string to integer. 
-				;       isNegativeNum: May be modified in a ReadVal call, but is always restored before procedure returns. 
+				;       isNegativeNum: May be modified in a ReadVal call, but is always restored before procedure returns.
+				;       Strings are outputted to the terminal in multiple cases, such as when string is not valid, when user is prompted
+				;       for a number. 
 				;
 				;
 				; --------------------------------------------------------------------------------------------------
@@ -845,7 +852,6 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:48:31
 
  00000302			ReadVal ENDP
 
-
 				; --------------------------------------------------------------------------------------------------
 				; Name: calculateSum
 				; 
@@ -925,8 +931,8 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:48:31
 				;       MINUS_SIGN_ASCII and POSITIVE, global constants
 				;
 				; Returns:
-				;       writevalOutputString: modified and not restored. Towards end of the procedure, mDisplayString is used
-				;       to display the string that WriteVal outputted to writevalOutputString. Upon procedure return, writevalOutputString is not restored.
+				;       writevalOutputString: modified and not restored upon procedure return
+				;       Towards end of the procedure, mDisplayString is invoked to display the string that WriteVal outputted to writevalOutputString.
 				; --------------------------------------------------------------------------------------------------
  0000032B			WriteVal    PROC
  0000032B  55			    PUSH    EBP
@@ -1095,7 +1101,7 @@ Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:48:31
  000003D0			calculateRoundedAverage     ENDP
 
 				END main
-Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 02:48:31
+Microsoft (R) Macro Assembler Version 14.28.29913.0	    06/06/21 14:08:23
 "Project 6     (Proj6_pantojaj.asm			     Symbols 2 - 1
 
 
