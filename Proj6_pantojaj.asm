@@ -5,7 +5,7 @@ TITLE Project 6     (Proj6_pantojaj.asm)
 ; OSU email address: pantojaj@oregonstate.edu
 ; Course number/section:   CS271 Section 400
 ; Project Number:  6               Due Date: 6/6/2021
-; Description: Includes a program that asks the user for 10 signed numbers that can fit inside a 32 bit register as strings. 
+; Description: Includes a program that asks the user for 10 signed numbers (that can fit inside a 32 bit register) as strings. 
 ; The program then converts the strings to their integer SDWORD data type form, stores them, calculates the sum, and rounded
 ; average. The program then converts the SDWORD data type integers, sum, and rounded average to strings. Finally,
 ; a list of the numbers the user entered, the sum of those numbers, and their rounded average are outputted as strings.
@@ -21,6 +21,9 @@ INCLUDE Irvine32.inc
 ;
 ; Receives:
 ;       strAddr = the starting address of the string to output
+;
+; Returns:
+;       The string at strAddr as output to the terminal.
 ; 
 ; --------------------------------------------------------------------------------------------------
 mDisplayString MACRO strAddr
@@ -34,7 +37,7 @@ ENDM
 ; --------------------------------------------------------------------------------------------------
 ; Name: mGetString
 ;
-; Prompts the user to enter an integer as a string, then reads and saves the input string to memory. Uses Irvine
+; Prompts the user to enter an integer as a string using mDisplayString, then reads and saves the input string to memory. Uses Irvine
 ; library ReadString 
 ;
 ; Preconditions: Do not use EDX, ECX, or EDI as arguments
@@ -44,6 +47,11 @@ ENDM
 ;       inputStringAddr = The address to save the user's input to. 
 ;       maxStrLength = an immediate value denoting the max number of bytes to read from the user
 ;       charsReadAddr = the address of a data variable to save the number of bytes read from the user's input.
+;
+; Returns:
+;       charsReadAddr: saves the number of bytes read from the user's inpt into the data variable address at
+;       charsReadAddr
+;
 ;
 ; --------------------------------------------------------------------------------------------------
 mGetString MACRO promptAddr, inputStringAddr, maxStrLength, charsReadAddr
@@ -246,10 +254,13 @@ main ENDP
 ; to output strings.
 ;
 ; Receives:
-;    [EBP + 20] = header1 address. Program title string.
-;    [EBP + 16] = header2 address. "Programmed by.." string 
-;    [EBP + 12] = header3 address. String describing what the user should be inputting
-;    [EBP + 8] = header4 address. String describing what the program will output
+;       [EBP + 20] = header1 address. Program title string.
+;       [EBP + 16] = header2 address. "Programmed by.." string 
+;       [EBP + 12] = header3 address. String describing what the user should be inputting
+;       [EBP + 8] = header4 address. String describing what the program will output
+;
+; Returns:
+;       Four string outputs to the terminal.
 ;
 ; --------------------------------------------------------------------------------------------------
 introduction PROC
@@ -300,7 +311,9 @@ introduction ENDP
 ;                         Every call to ReadVal overwrites previous value, if any. 
 ;       userInputNumericVal: ReadVal's primary output. This variable will hold the integer SDWORD type after ReadVal
 ;                           converts the user's string to integer. 
-;       isNegativeNum: May be modified in a ReadVal call, but is always restored before procedure returns. 
+;       isNegativeNum: May be modified in a ReadVal call, but is always restored before procedure returns.
+;       Strings are outputted to the terminal in multiple cases, such as when string is not valid, when user is prompted
+;       for a number. 
 ;
 ;
 ; --------------------------------------------------------------------------------------------------
@@ -687,8 +700,8 @@ calculateSum    ENDP
 ;       MINUS_SIGN_ASCII and POSITIVE, global constants
 ;
 ; Returns:
-;       writevalOutputString: modified and not restored. Towards end of the procedure, mDisplayString is used
-;       to display the string that WriteVal outputted to writevalOutputString. Upon procedure return, writevalOutputString is not restored.
+;       writevalOutputString: modified and not restored upon procedure return
+;       Towards end of the procedure, mDisplayString is invoked to display the string that WriteVal outputted to writevalOutputString.
 ; --------------------------------------------------------------------------------------------------
 WriteVal    PROC
     PUSH    EBP
